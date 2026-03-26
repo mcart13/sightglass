@@ -27,6 +27,8 @@ const toReadonlyAppliedState = (
   Object.freeze({
     target: state.target,
     property: state.property,
+    semanticKind: state.semanticKind,
+    before: state.before,
     beforeInline: state.beforeInline,
     beforeComputed: state.beforeComputed,
     after: state.after,
@@ -103,6 +105,7 @@ export class MutationHistoryStore {
     readonly key: string;
     readonly target: Element;
     readonly property: string;
+    readonly semanticKind: MutationStateRecord["semanticKind"];
     readonly value: string;
   }[] {
     const baselines = new Map<string, MutationStateRecord>();
@@ -127,6 +130,7 @@ export class MutationHistoryStore {
         key,
         target: baseline.target,
         property: baseline.property,
+        semanticKind: baseline.semanticKind,
         value: active ? active.after : baseline.beforeInline,
       };
     });

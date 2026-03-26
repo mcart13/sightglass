@@ -1,6 +1,10 @@
+import type { EditOperation } from "../types";
+
 export interface AppliedTargetState {
   readonly target: Element;
   readonly property: string;
+  readonly semanticKind: EditOperation["semanticKind"];
+  readonly before: string;
   readonly beforeInline: string;
   readonly beforeComputed: string;
   readonly after: string;
@@ -10,6 +14,7 @@ export interface PendingStyleWrite {
   readonly key: string;
   readonly target: Element;
   readonly property: string;
+  readonly semanticKind: EditOperation["semanticKind"];
   readonly value: string;
 }
 
@@ -17,9 +22,21 @@ const trimStyleValue = (value: string): string => value.trim();
 
 export const captureAppliedTargetState = (
   target: Element,
-  property: string,
-  after: string,
+  operation: Readonly<EditOperation>,
 ): AppliedTargetState => {
+  if (operation.semanticKind === "text") {
+    return {
+      target,
+      property: operation.property,
+      semanticKind: operation.semanticKind,
+      before: operation.before,
+      beforeInline: operation.before,
+      beforeComputed: operation.before,
+      after: operation.after,
+    };
+  }
+
+  const { property, after, semanticKind } = operation;
   const inlineStyle = (target as HTMLElement).style;
   const beforeInline = trimStyleValue(inlineStyle.getPropertyValue(property));
   const view = target.ownerDocument.defaultView;
@@ -30,6 +47,8 @@ export const captureAppliedTargetState = (
   return {
     target,
     property,
+    semanticKind,
+    before: beforeInline,
     beforeInline,
     beforeComputed,
     after,
@@ -63,6 +82,16 @@ export const flushStyleWrites = async (
     scheduleFrame(() => {
       for (const write of writes) {
         if (!write.target.isConnected) {
+          continue;
+        }
+
+        if (write.semanticKind === "text") {
+          if (write.property === "textContent") {
+            write.target.textContent = write.value;
+            continue;
+          }
+
+          (write.target as Element & { innerHTML: string }).innerHTML = write.value;
           continue;
         }
 

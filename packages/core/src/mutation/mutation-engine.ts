@@ -84,7 +84,7 @@ export const createMutationEngine = (
       const targetId = getTargetId(target);
 
       for (const operation of transaction.operations) {
-        const key = `${targetId}::${operation.property}`;
+        const key = `${targetId}::${operation.semanticKind}::${operation.property}`;
         const existing = statesByKey.get(key);
 
         if (existing) {
@@ -92,11 +92,7 @@ export const createMutationEngine = (
           continue;
         }
 
-        const captured = captureAppliedTargetState(
-          target,
-          operation.property,
-          operation.after,
-        );
+        const captured = captureAppliedTargetState(target, operation);
 
         statesByKey.set(key, {
           ...captured,
