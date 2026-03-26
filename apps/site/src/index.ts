@@ -1,0 +1,1 @@
+export const siteReady = true;

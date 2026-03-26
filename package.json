@@ -1,0 +1,20 @@
+{
+  "name": "sightglass",
+  "private": true,
+  "packageManager": "yarn@4.13.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "yarn workspaces foreach -Wpt run build",
+    "typecheck": "yarn workspaces foreach -Wpt run typecheck",
+    "test": "yarn workspaces foreach -Wpt run test",
+    "lint": "yarn workspaces foreach -Wpt run lint",
+    "dev:playground": "yarn workspace @sightglass/playground dev",
+    "dev:site": "yarn workspace @sightglass/site dev"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

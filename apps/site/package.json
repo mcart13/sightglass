@@ -1,0 +1,13 @@
+{
+  "name": "@sightglass/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'dev server not configured for @sightglass/site yet'",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo 'test not configured for @sightglass/site yet'",
+    "lint": "echo 'lint not configured for @sightglass/site yet'"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@sightglass/playground",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'dev server not configured for @sightglass/playground yet'",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo 'test not configured for @sightglass/playground yet'",
+    "lint": "echo 'lint not configured for @sightglass/playground yet'"
+  }
+}

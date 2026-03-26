@@ -1,0 +1,17 @@
+{
+  "name": "@sightglass/critique",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo 'test not configured for @sightglass/critique yet'",
+    "lint": "echo 'lint not configured for @sightglass/critique yet'"
+  }
+}
