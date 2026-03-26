@@ -39,6 +39,7 @@ export {
   restoreRichText,
   serializeRichText,
 } from "./text/serialize-rich-text.js";
+export { createSightglassController } from "./controller.js";
 export type {
   SelectionAnchor,
 } from "./selection/generate-anchor.js";
@@ -53,6 +54,11 @@ export type {
   MutationEngineSnapshot,
 } from "./mutation/mutation-engine.js";
 export type { SelectionResult } from "./selection/identify.js";
+export type {
+  SightglassController,
+  SightglassSessionSnapshot,
+  CreateSightglassControllerOptions,
+} from "./controller.js";
 export type {
   ActiveTextEdit,
   TextEditStartInput,
