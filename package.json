@@ -15,6 +15,8 @@
     "dev:site": "yarn workspace @sightglass/site dev"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "jsdom": "^26.1.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }

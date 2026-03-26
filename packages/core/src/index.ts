@@ -19,3 +19,23 @@ export {
   isSessionTransaction,
   isTargetAnchor,
 } from "./contracts";
+export {
+  generateAnchor,
+  generateAnchors,
+  selectionInternals,
+} from "./selection/generate-anchor.js";
+export {
+  createSelectionMatch,
+  findBestElement,
+  resolveBestElement,
+} from "./selection/find-best-element.js";
+export { findSimilarElements } from "./selection/find-similar-elements.js";
+export { identifySelection } from "./selection/identify.js";
+export type {
+  SelectionAnchor,
+} from "./selection/generate-anchor.js";
+export type {
+  SelectionMatch,
+  SelectionPoint,
+} from "./selection/find-best-element.js";
+export type { SelectionResult } from "./selection/identify.js";
