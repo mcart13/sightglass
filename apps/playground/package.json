@@ -3,11 +3,27 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "dependencies": {
+    "@sightglass/core": "workspace:*",
+    "@sightglass/critique": "workspace:*",
+    "@sightglass/export": "workspace:*",
+    "@sightglass/react": "workspace:*",
+    "@sightglass/session": "workspace:*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "vite": "^6.4.1"
+  },
   "scripts": {
-    "dev": "echo 'dev server not configured for @sightglass/playground yet'",
-    "build": "yarn run -T tsc -p tsconfig.json",
+    "dev": "vite --config vite.config.ts --host 127.0.0.1 --port 4173 --strictPort",
+    "build": "vite build --config vite.config.ts && yarn run -T tsc -p tsconfig.json --noEmit",
     "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
     "test": "yarn run -T vitest run src/routes/review.test.ts",
+    "test:e2e": "yarn run -T playwright test --config=playwright.config.ts --reporter=line --workers=1",
     "lint": "echo 'lint not configured for @sightglass/playground yet'"
   }
 }

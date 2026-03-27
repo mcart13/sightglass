@@ -96,6 +96,25 @@ const readMotionSignals = (
   });
 };
 
+const resolveMatchingActionCount = (
+  document: Document,
+  selectedElement: Element,
+): number => {
+  const selector = Array.from(selectedElement.classList)
+    .map((className) => `.${className}`)
+    .join("");
+
+  if (!selector) {
+    return 0;
+  }
+
+  try {
+    return document.querySelectorAll(selector).length;
+  } catch {
+    return 0;
+  }
+};
+
 export const inferCritiqueContext = (
   document: Document,
   selectedElement: Element,
@@ -107,11 +126,10 @@ export const inferCritiqueContext = (
     document.body.getAttribute("data-route") ??
     document.location.pathname;
   const selectedClasses = Object.freeze(Array.from(selectedElement.classList));
-  const matchingActionCount = document.querySelectorAll(
-    Array.from(selectedElement.classList)
-      .map((className) => `.${className}`)
-      .join(""),
-  ).length;
+  const matchingActionCount = resolveMatchingActionCount(
+    document,
+    selectedElement,
+  );
 
   return Object.freeze({
     route,

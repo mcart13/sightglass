@@ -89,4 +89,37 @@ describe("critique engine", () => {
       ),
     ).toBe(true);
   });
+
+  it("does not crash when the selected element has no class names", () => {
+    const document = createDocument(`
+      <main data-route="/playground/landing">
+        <section>
+          <article data-testid="selected-target" style="transition: all 420ms ease;">
+            Classless target
+          </article>
+        </section>
+      </main>
+    `);
+    const selectedElement = document.querySelector(
+      "[data-testid='selected-target']",
+    ) as Element;
+    const target = createTargetAnchor({
+      runtimeId: "article:selected-target",
+      selector: "[data-testid='selected-target']",
+      path: "main > section:nth-of-type(1) > article:nth-of-type(1)",
+      role: null,
+      classes: [],
+    });
+
+    const report = runCritique({
+      document,
+      selectedElement,
+      scope: "page",
+      perspective: "jakub",
+      target,
+    });
+
+    expect(report.context.matchingActionCount).toBe(0);
+    expect(report.findings.length).toBeGreaterThan(0);
+  });
 });

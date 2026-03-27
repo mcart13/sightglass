@@ -7,6 +7,8 @@ export type {
 export {
   useSightglassCommands,
   useSightglassOverlayState,
+  useSightglassReviewDraftCommands,
+  useSightglassReviewDraftState,
   useSightglassSessionState,
 } from "./use-sightglass";
 export { Toolbar } from "./components/Toolbar";
