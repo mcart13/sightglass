@@ -36,7 +36,9 @@ const getImplicitRole = (element: Element): string | null => {
 
   if (tagName === "input") {
     const inputType = element.getAttribute("type")?.toLowerCase();
-    return inputType === "button" || inputType === "submit" ? "button" : "textbox";
+    return inputType === "button" || inputType === "submit"
+      ? "button"
+      : "textbox";
   }
 
   return null;
@@ -49,7 +51,7 @@ const getPathSegment = (element: Element): string => {
   const tagName = element.tagName.toLowerCase();
   const siblings = element.parentElement
     ? [...element.parentElement.children].filter(
-        (candidate) => candidate.tagName === element.tagName,
+        (candidate) => candidate.tagName === element.tagName
       )
     : [];
 
@@ -67,7 +69,9 @@ const buildPath = (element: Element): string => {
   while (current && current.tagName.toLowerCase() !== "html") {
     if (current.id) {
       segments.unshift(
-        `${current.tagName.toLowerCase()}[id="${escapeAttributeValue(current.id)}"]`,
+        `${current.tagName.toLowerCase()}[id="${escapeAttributeValue(
+          current.id
+        )}"]`
       );
       break;
     }
@@ -100,7 +104,10 @@ const countSelectorMatches = (element: Element, selector: string): number => {
   }
 };
 
-const buildSelectors = (element: Element, path: string): Array<{ selector: string; confidence: number }> => {
+const buildSelectors = (
+  element: Element,
+  path: string
+): Array<{ selector: string; confidence: number }> => {
   const selectors: Array<{ selector: string; confidence: number }> = [];
   const dataTestId = element.getAttribute("data-testid");
   const dataSightglassId = element.getAttribute("data-sightglass-id");
@@ -117,7 +124,9 @@ const buildSelectors = (element: Element, path: string): Array<{ selector: strin
 
   if (dataSightglassId) {
     selectors.push({
-      selector: `[data-sightglass-id="${escapeAttributeValue(dataSightglassId)}"]`,
+      selector: `[data-sightglass-id="${escapeAttributeValue(
+        dataSightglassId
+      )}"]`,
       confidence: 0.97,
     });
   }
@@ -156,7 +165,10 @@ const buildSelectors = (element: Element, path: string): Array<{ selector: strin
     confidence: 0.72,
   });
 
-  const selectorsByValue = new Map<string, { selector: string; confidence: number }>();
+  const selectorsByValue = new Map<
+    string,
+    { selector: string; confidence: number }
+  >();
 
   for (const candidate of selectors) {
     const existing = selectorsByValue.get(candidate.selector);
@@ -172,8 +184,10 @@ const buildSelectors = (element: Element, path: string): Array<{ selector: strin
   }
 
   return Array.from(selectorsByValue.values()).sort((left, right) => {
-    const leftMatchCount = matchCounts.get(left.selector) ?? Number.POSITIVE_INFINITY;
-    const rightMatchCount = matchCounts.get(right.selector) ?? Number.POSITIVE_INFINITY;
+    const leftMatchCount =
+      matchCounts.get(left.selector) ?? Number.POSITIVE_INFINITY;
+    const rightMatchCount =
+      matchCounts.get(right.selector) ?? Number.POSITIVE_INFINITY;
     const leftIsUnique = leftMatchCount === 1 ? 1 : 0;
     const rightIsUnique = rightMatchCount === 1 ? 1 : 0;
 
@@ -186,7 +200,9 @@ const buildSelectors = (element: Element, path: string): Array<{ selector: strin
   });
 };
 
-export const generateAnchors = (element: Element): readonly SelectionAnchor[] => {
+export const generateAnchors = (
+  element: Element
+): readonly SelectionAnchor[] => {
   const path = buildPath(element);
   const runtimeId = getRuntimeId(element, path);
   const role = getRole(element);
@@ -205,16 +221,18 @@ export const generateAnchors = (element: Element): readonly SelectionAnchor[] =>
         alternates: Object.freeze(
           selectors
             .filter((entry, entryIndex) => entryIndex !== index)
-            .map((entry) => entry.selector),
+            .map((entry) => entry.selector)
         ),
-      }),
-    ),
+      })
+    )
   );
 };
 
-export const generateAnchor = (element: Element): SelectionAnchor => generateAnchors(element)[0];
+export const generateAnchor = (element: Element): SelectionAnchor =>
+  generateAnchors(element)[0];
 
 export const selectionInternals = {
   getStableClasses,
+  getRole,
   isHashedClassName,
 };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   generateAnchor,
   type SelectionAnchor,
@@ -11,10 +11,7 @@ import {
   generateDesignDirections,
   runScopedCritique,
 } from "@sightglass/critique";
-import {
-  createChangeManifest,
-  createReviewArtifact,
-} from "@sightglass/export";
+import { createChangeManifest, createReviewArtifact } from "@sightglass/export";
 import {
   buildChangeManifestTargets,
   buildSessionTransactionsFromHistory,
@@ -22,6 +19,7 @@ import {
   createReviewDraftSnapshot,
   createSessionRecord,
   serializeHistorySnapshot,
+  type ReviewDraftSnapshot,
   type SessionRecord,
   type SessionStore,
 } from "@sightglass/session";
@@ -30,6 +28,7 @@ import {
   useSightglassReviewDraftState,
 } from "../use-sightglass";
 import {
+  panelButtonStyle,
   panelCardStyle,
   panelSectionLabelStyle,
   panelSectionStyle,
@@ -39,19 +38,8 @@ interface SessionPanelProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
 }
 
-type ReviewDraftState = ReturnType<typeof useSightglassReviewDraftState>;
-
-const buttonStyle: CSSProperties = {
-  border: "1px solid rgba(148, 163, 184, 0.22)",
-  background: "rgba(255, 255, 255, 0.9)",
-  color: "#0f172a",
-  borderRadius: 999,
-  padding: "6px 10px",
-  cursor: "pointer",
-};
-
 const resolveTargetAnchor = (
-  session: Readonly<SightglassSessionSnapshot>,
+  session: Readonly<SightglassSessionSnapshot>
 ): SelectionAnchor | null => {
   const selectedAnchor = session.selection.best?.anchors[0] ?? null;
 
@@ -80,7 +68,7 @@ const buildRoute = (session: Readonly<SightglassSessionSnapshot>): string => {
 const applyLoadedRecordEdits = (
   record: Readonly<SessionRecord>,
   sessionName: string,
-  reviewDraft: ReviewDraftState,
+  reviewDraft: ReviewDraftSnapshot
 ): Readonly<SessionRecord> =>
   Object.freeze({
     ...record,
@@ -93,12 +81,18 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
   const reviewDraft = useSightglassReviewDraftState();
   const reviewDraftCommands = useSightglassReviewDraftCommands();
   const [store, setStore] = useState<SessionStore | null>(null);
-  const [savedSessions, setSavedSessions] = useState<readonly SessionRecord[]>([]);
+  const [savedSessions, setSavedSessions] = useState<readonly SessionRecord[]>(
+    []
+  );
   const [sessionName, setSessionName] = useState("Current review");
   const [payloadText, setPayloadText] = useState("");
-  const [statusText, setStatusText] = useState("Session storage initializes locally.");
+  const [statusText, setStatusText] = useState(
+    "Session storage initializes locally."
+  );
   const [loadedRecord, setLoadedRecord] = useState<SessionRecord | null>(null);
-  const [loadedRecordSignature, setLoadedRecordSignature] = useState<string | null>(null);
+  const [loadedRecordSignature, setLoadedRecordSignature] = useState<
+    string | null
+  >(null);
 
   const route = buildRoute(session);
   const selectedElement = session.selectedElement;
@@ -109,7 +103,7 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
         selectedSelector: target?.selector ?? null,
         appliedCount: session.history.applied.length,
       }),
-    [session.history.applied.length, target?.selector],
+    [session.history.applied.length, target?.selector]
   );
   const critiqueReport = useMemo(() => {
     return runScopedCritique({
@@ -125,30 +119,42 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
     target,
   ]);
   const directions = useMemo(
-    () => (critiqueReport ? generateDesignDirections(critiqueReport) : Object.freeze([])),
-    [critiqueReport],
+    () =>
+      critiqueReport
+        ? generateDesignDirections(critiqueReport)
+        : Object.freeze([]),
+    [critiqueReport]
   );
   const selectedDirection =
-    directions.find((direction) => direction.id === reviewDraft.selectedDirectionId) ??
+    directions.find(
+      (direction) => direction.id === reviewDraft.selectedDirectionId
+    ) ??
     directions[0] ??
     null;
   const motionStoryboard = useMemo(
-    () => (critiqueReport ? buildMotionStoryboard(critiqueReport.context) : null),
-    [critiqueReport],
+    () =>
+      critiqueReport ? buildMotionStoryboard(critiqueReport.context) : null,
+    [critiqueReport]
   );
   const motionTuningSchema = useMemo(
-    () => (critiqueReport ? createMotionTuningSchema(critiqueReport.context) : null),
-    [critiqueReport],
+    () =>
+      critiqueReport ? createMotionTuningSchema(critiqueReport.context) : null,
+    [critiqueReport]
   );
   const liveRecord = useMemo(() => {
-    if (!target || !critiqueReport || !motionStoryboard || !motionTuningSchema) {
+    if (
+      !target ||
+      !critiqueReport ||
+      !motionStoryboard ||
+      !motionTuningSchema
+    ) {
       return null;
     }
 
     const createdAt = new Date().toISOString();
     const transactions = buildSessionTransactionsFromHistory(
       session.history,
-      createdAt,
+      createdAt
     );
     const exploration =
       selectedDirection && critiqueReport
@@ -156,8 +162,10 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
             {
               directionId: selectedDirection.id,
               title: selectedDirection.title,
-              proposedOperations:
-                buildExploreEditPlan(selectedDirection, critiqueReport).proposedOperations,
+              proposedOperations: buildExploreEditPlan(
+                selectedDirection,
+                critiqueReport
+              ).proposedOperations,
             },
           ]
         : [];
@@ -167,7 +175,7 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
       targets: buildChangeManifestTargets(
         transactions,
         target,
-        "Current selection",
+        "Current selection"
       ),
       transactions,
       critique: critiqueReport.findings,
@@ -204,7 +212,10 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
   ]);
 
   useEffect(() => {
-    if (loadedRecordSignature && liveSessionSignature !== loadedRecordSignature) {
+    if (
+      loadedRecordSignature &&
+      liveSessionSignature !== loadedRecordSignature
+    ) {
       setLoadedRecord(null);
       setLoadedRecordSignature(null);
     }
@@ -299,7 +310,7 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
       setStatusText(
         error instanceof Error
           ? `Import failed: ${error.message}`
-          : "Import failed: Unable to import the session payload.",
+          : "Import failed: Unable to import the session payload."
       );
     }
   };
@@ -318,16 +329,36 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
       </label>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button data-session-save type="button" style={buttonStyle} onClick={() => void handleSave()}>
+        <button
+          data-session-save
+          type="button"
+          style={panelButtonStyle}
+          onClick={() => void handleSave()}
+        >
           Save session
         </button>
-        <button data-session-load-latest type="button" style={buttonStyle} onClick={() => void handleLoadLatest()}>
+        <button
+          data-session-load-latest
+          type="button"
+          style={panelButtonStyle}
+          onClick={() => void handleLoadLatest()}
+        >
           Load latest
         </button>
-        <button data-session-export type="button" style={buttonStyle} onClick={() => void handleExport()}>
+        <button
+          data-session-export
+          type="button"
+          style={panelButtonStyle}
+          onClick={() => void handleExport()}
+        >
           Export .surface-session.json
         </button>
-        <button data-session-import type="button" style={buttonStyle} onClick={() => void handleImport()}>
+        <button
+          data-session-import
+          type="button"
+          style={panelButtonStyle}
+          onClick={() => void handleImport()}
+        >
           Import session
         </button>
       </div>
@@ -349,7 +380,8 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
             >
               <strong>{savedSession.name}</strong>
               <span style={{ color: "#475569", fontSize: 13 }}>
-                {savedSession.route} · {savedSession.reviewArtifact.transactionCount} transactions
+                {savedSession.route} ·{" "}
+                {savedSession.reviewArtifact.transactionCount} transactions
               </span>
             </div>
           ))
@@ -379,7 +411,8 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
         </div>
       ) : (
         <span style={{ color: "#475569", fontSize: 13 }}>
-          Inspect a live target or load a saved session to generate a session artifact preview.
+          Inspect a live target or load a saved session to generate a session
+          artifact preview.
         </span>
       )}
     </section>

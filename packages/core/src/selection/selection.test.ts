@@ -15,13 +15,17 @@ describe("selection heuristics", () => {
       </button>
     `);
     const hit = document.querySelector("[data-hit='label']") as Element;
-    document.elementFromPoint = vi.fn(() => hit) as unknown as typeof document.elementFromPoint;
+    document.elementFromPoint = vi.fn(
+      () => hit
+    ) as unknown as typeof document.elementFromPoint;
 
-    const match = core.findBestElement(document, { x: 8, y: 12 });
+    const result = core.identifySelection(document, { x: 8, y: 12 });
 
-    expect(match?.anchors[0].path).toContain("button");
-    expect(match?.anchors[0].selector).not.toContain("Button_root__9x8y7");
-    expect(match?.confidence).toBeGreaterThan(0.8);
+    expect(result.best?.anchors[0].path).toContain("button");
+    expect(result.best?.anchors[0].selector).not.toContain(
+      "Button_root__9x8y7"
+    );
+    expect(result.best?.confidence).toBeGreaterThan(0.8);
   });
 
   it("groups similar elements by class overlap and rejects nested matches", () => {
@@ -41,9 +45,9 @@ describe("selection heuristics", () => {
 
     expect(matches).toHaveLength(2);
     expect(matches.every((match) => match.confidence > 0.5)).toBe(true);
-    expect(selectors.some((selector) => selector.includes(".nested-action"))).toBe(
-      false,
-    );
+    expect(
+      selectors.some((selector) => selector.includes(".nested-action"))
+    ).toBe(false);
   });
 
   it("generates stable anchors when class names are hashed", () => {
@@ -52,12 +56,14 @@ describe("selection heuristics", () => {
         Hashed classes only
       </div>
     `);
-    const element = document.querySelector("[data-testid='stable-card']") as Element;
+    const element = document.querySelector(
+      "[data-testid='stable-card']"
+    ) as Element;
 
     const anchor = core.generateAnchor(element);
 
     expect(anchor.runtimeId).toContain("stable-card");
-    expect(anchor.selector).toBe("[data-testid=\"stable-card\"]");
+    expect(anchor.selector).toBe('[data-testid="stable-card"]');
     expect(anchor.selector).not.toContain("Card_card__abc123");
     expect(anchor.alternates.length).toBeGreaterThan(1);
   });
@@ -79,9 +85,13 @@ describe("selection heuristics", () => {
     `);
     const element = document.querySelector("button") as Element;
 
-    const selectors = core.generateAnchors(element).map((anchor) => anchor.selector);
+    const selectors = core
+      .generateAnchors(element)
+      .map((anchor) => anchor.selector);
 
-    expect(selectors.some((selector) => selector.includes("[role="))).toBe(false);
+    expect(selectors.some((selector) => selector.includes("[role="))).toBe(
+      false
+    );
   });
 
   it("builds selectors that stay queryable when ids contain CSS special characters", () => {

@@ -1,9 +1,19 @@
 import type { EditScope, EditSemanticKind } from "@sightglass/core";
-import type { CritiqueReport, DesignDirection, ExploreEditOperation, ExploreEditPlan } from "../contracts.js";
+import type {
+  CritiqueReport,
+  DesignDirection,
+  ExploreEditOperation,
+  ExploreEditPlan,
+} from "../contracts.js";
 
 const CATEGORY_TO_OPERATION: Record<
   string,
-  { property: string; semanticKind: EditSemanticKind; scope: EditScope; value: string }
+  {
+    property: string;
+    semanticKind: EditSemanticKind;
+    scope: EditScope;
+    value: string;
+  }
 > = Object.freeze({
   "visual-design": {
     property: "surface-emphasis",
@@ -50,42 +60,29 @@ const CATEGORY_TO_OPERATION: Record<
 });
 
 const createOperation = (
-  id: string,
-  title: string,
-  rationale: string,
-  property: string,
-  semanticKind: EditSemanticKind,
-  scope: EditScope,
-  value: string,
-): ExploreEditOperation =>
-  Object.freeze({
-    id,
-    property,
-    semanticKind,
-    scope,
-    title,
-    value,
-    rationale,
-  });
+  options: Omit<ExploreEditOperation, never>
+): ExploreEditOperation => Object.freeze(options);
 
 export const buildExploreEditPlan = (
   direction: Readonly<DesignDirection>,
-  report: Readonly<CritiqueReport>,
+  report: Readonly<CritiqueReport>
 ): Readonly<ExploreEditPlan> => {
   const operations = report.findings
     .filter((finding) => direction.findingIds.includes(finding.id))
     .map((finding) => {
       const template = CATEGORY_TO_OPERATION[finding.category];
 
-      return createOperation(
-        `plan:${direction.id}:${finding.id}`,
-        finding.title,
-        `${direction.title} addresses ${finding.category} by ${finding.recommendation.toLowerCase()}`,
-        template.property,
-        template.semanticKind,
-        template.scope,
-        template.value,
-      );
+      return createOperation({
+        id: `plan:${direction.id}:${finding.id}`,
+        title: finding.title,
+        rationale: `${direction.title} addresses ${
+          finding.category
+        } by ${finding.recommendation.toLowerCase()}`,
+        property: template.property,
+        semanticKind: template.semanticKind,
+        scope: template.scope,
+        value: template.value,
+      });
     });
 
   return Object.freeze({

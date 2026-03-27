@@ -27,25 +27,7 @@ const UTILITY_CLASS_PATTERN =
 const GENERIC_COMPONENT_CLASS_PATTERN =
   /^(cta|btn|button|primary|secondary|tertiary)$/;
 
-const getRole = (element: Element): string | null => {
-  const explicitRole = element.getAttribute("role");
-
-  if (explicitRole) {
-    return explicitRole;
-  }
-
-  const tagName = element.tagName.toLowerCase();
-
-  if (tagName === "button") {
-    return "button";
-  }
-
-  if (tagName === "a" && element.hasAttribute("href")) {
-    return "link";
-  }
-
-  return null;
-};
+const { getRole } = selectionInternals;
 
 const countTextSlots = (element: Element): number => {
   let count = 0;
@@ -68,28 +50,31 @@ const countTextSlots = (element: Element): number => {
 };
 
 export const describeComponentSignature = (
-  element: Element,
+  element: Element
 ): Readonly<ComponentSignature> => {
   const tagName = element.tagName.toLowerCase();
   const stableClasses = selectionInternals.getStableClasses(element);
   const childTags = Array.from(element.children).map((child) =>
-    child.tagName.toLowerCase(),
+    child.tagName.toLowerCase()
   );
+  const role = getRole(element);
+  const childCount = element.children.length;
+  const textSlotCount = countTextSlots(element);
   const signature: ComponentSignature = {
     key: JSON.stringify([
       tagName,
-      getRole(element),
+      role,
       stableClasses,
       childTags,
-      element.children.length,
-      countTextSlots(element),
+      childCount,
+      textSlotCount,
     ]),
     tagName,
-    role: getRole(element),
+    role,
     stableClasses: Object.freeze(stableClasses),
-    childCount: element.children.length,
+    childCount,
     childTags: Object.freeze(childTags),
-    textSlotCount: countTextSlots(element),
+    textSlotCount,
   };
 
   return Object.freeze(signature);
@@ -97,7 +82,7 @@ export const describeComponentSignature = (
 
 const getDescriptor = (signature: Readonly<ComponentSignature>): string => {
   const semanticClasses = signature.stableClasses.filter(
-    (className) => !UTILITY_CLASS_PATTERN.test(className),
+    (className) => !UTILITY_CLASS_PATTERN.test(className)
   );
 
   if (semanticClasses.length === 0) {
@@ -107,10 +92,11 @@ const getDescriptor = (signature: Readonly<ComponentSignature>): string => {
   const preferredClass =
     semanticClasses.find(
       (className) =>
-        className.includes("-") && !GENERIC_COMPONENT_CLASS_PATTERN.test(className),
+        className.includes("-") &&
+        !GENERIC_COMPONENT_CLASS_PATTERN.test(className)
     ) ??
     semanticClasses.find(
-      (className) => !GENERIC_COMPONENT_CLASS_PATTERN.test(className),
+      (className) => !GENERIC_COMPONENT_CLASS_PATTERN.test(className)
     ) ??
     semanticClasses[0];
 
@@ -119,15 +105,17 @@ const getDescriptor = (signature: Readonly<ComponentSignature>): string => {
 
 export const detectComponentMatch = (
   element: Element,
-  options: DetectComponentMatchOptions = {},
+  options: DetectComponentMatchOptions = {}
 ): ComponentMatch | null => {
   const selectedSignature = describeComponentSignature(element);
   const similarElements = options.similarElements ?? [];
   const uniqueCandidates = [element, ...similarElements].filter(
-    (candidate, index, allCandidates) => allCandidates.indexOf(candidate) === index,
+    (candidate, index, allCandidates) =>
+      allCandidates.indexOf(candidate) === index
   );
   const matches = uniqueCandidates.filter(
-    (candidate) => describeComponentSignature(candidate).key === selectedSignature.key,
+    (candidate) =>
+      describeComponentSignature(candidate).key === selectedSignature.key
   );
 
   if (matches.length <= 1) {

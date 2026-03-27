@@ -44,7 +44,7 @@ const emptySelection = (): SelectionResult => ({
 });
 
 const createSnapshot = (
-  overrides: Partial<SightglassSessionSnapshot> = {},
+  overrides: Partial<SightglassSessionSnapshot> = {}
 ): SightglassSessionSnapshot => ({
   active: false,
   history: emptyHistory(),
@@ -58,24 +58,24 @@ const createSelection = (): Readonly<SelectionResult> =>
     best: Object.freeze({
       confidence: 0.92,
       anchors: Object.freeze([
-          Object.freeze({
-            runtimeId: "selected-target",
-            selector: "[data-testid='selected-target']",
-            path: "main > button:nth-of-type(1)",
-            role: "button",
-            classes: Object.freeze([
-              "cta",
-              "card-action",
-              "rounded-lg",
-              "bg-slate-900",
-              "px-4",
-              "py-2",
-            ]),
-            confidence: 0.98,
-            alternates: Object.freeze(["button.cta"]),
-          }),
-        ]),
-      }),
+        Object.freeze({
+          runtimeId: "selected-target",
+          selector: "[data-testid='selected-target']",
+          path: "main > button:nth-of-type(1)",
+          role: "button",
+          classes: Object.freeze([
+            "cta",
+            "card-action",
+            "rounded-lg",
+            "bg-slate-900",
+            "px-4",
+            "py-2",
+          ]),
+          confidence: 0.98,
+          alternates: Object.freeze(["button.cta"]),
+        }),
+      ]),
+    }),
     similar: Object.freeze([
       Object.freeze({
         confidence: 0.81,
@@ -102,9 +102,8 @@ const createSelection = (): Readonly<SelectionResult> =>
   });
 
 const createController = (
-  initialSnapshot: SightglassSessionSnapshot = createSnapshot(),
+  initialSnapshot: SightglassSessionSnapshot = createSnapshot()
 ): SightglassController & {
-  readonly mount: ReturnType<typeof vi.fn>;
   readonly destroy: ReturnType<typeof vi.fn>;
   readonly setActive: ReturnType<typeof vi.fn>;
   readonly inspectAtPoint: ReturnType<typeof vi.fn>;
@@ -120,7 +119,6 @@ const createController = (
   };
 
   return {
-    mount: vi.fn(),
     destroy: vi.fn(),
     subscribe(listener: () => void) {
       listeners.add(listener);
@@ -148,7 +146,9 @@ const createController = (
       });
       emit();
     }),
-    apply: vi.fn(async (_transaction: Readonly<SessionTransaction>) => snapshot.history),
+    apply: vi.fn(
+      async (_transaction: Readonly<SessionTransaction>) => snapshot.history
+    ),
     undo: vi.fn(async () => {
       snapshot = createSnapshot({
         ...snapshot,
@@ -181,8 +181,6 @@ class ClassBackedController implements SightglassController {
 
   private readonly listeners = new Set<() => void>();
 
-  readonly mount = vi.fn();
-
   readonly destroy = vi.fn();
 
   readonly setActive = vi.fn((active: boolean) => {
@@ -192,7 +190,9 @@ class ClassBackedController implements SightglassController {
 
   readonly inspectAtPoint = vi.fn((_point: SelectionPoint) => undefined);
 
-  readonly apply = vi.fn(async (_transaction: Readonly<SessionTransaction>) => this.snapshot.history);
+  readonly apply = vi.fn(
+    async (_transaction: Readonly<SessionTransaction>) => this.snapshot.history
+  );
 
   readonly undo = vi.fn(async () => this.snapshot.history);
 
@@ -310,7 +310,7 @@ const renderHarness = (controller = createController()) => {
         <SelectionOverlay />
         <SessionProbe />
         <CommandProbe />
-      </SightglassProvider>,
+      </SightglassProvider>
     );
   });
 
@@ -354,7 +354,7 @@ afterEach(() => {
 });
 
 describe("@sightglass/react provider", () => {
-  it("mounts and destroys the controller with the provider lifecycle", () => {
+  it("destroys the controller when the provider unmounts", () => {
     const controller = createController();
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -366,11 +366,9 @@ describe("@sightglass/react provider", () => {
       root.render(
         <SightglassProvider controller={controller}>
           <div>ready</div>
-        </SightglassProvider>,
+        </SightglassProvider>
       );
     });
-
-    expect(controller.mount).toHaveBeenCalledTimes(1);
 
     act(() => {
       root.unmount();
@@ -387,12 +385,12 @@ describe("@sightglass/react provider", () => {
 
     expect(harness.container.textContent).toContain("Start editing");
     expect(
-      harness.container.querySelector("[data-testid='session-probe']"),
+      harness.container.querySelector("[data-testid='session-probe']")
     ).not.toBeNull();
     expect(
       harness.container
         .querySelector("[data-testid='session-probe']")
-        ?.getAttribute("data-active"),
+        ?.getAttribute("data-active")
     ).toBe("false");
 
     act(() => {
@@ -406,7 +404,7 @@ describe("@sightglass/react provider", () => {
     expect(
       harness.container
         .querySelector("[data-testid='session-probe']")
-        ?.getAttribute("data-active"),
+        ?.getAttribute("data-active")
     ).toBe("true");
 
     harness.cleanup();
@@ -424,14 +422,19 @@ describe("@sightglass/react provider", () => {
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(harness.controller.inspectAtPoint).toHaveBeenCalledWith({ x: 12, y: 18 });
-    expect(harness.container.textContent).toContain("[data-testid='selected-target']");
+    expect(harness.controller.inspectAtPoint).toHaveBeenCalledWith({
+      x: 12,
+      y: 18,
+    });
+    expect(harness.container.textContent).toContain(
+      "[data-testid='selected-target']"
+    );
     expect(harness.container.textContent).toContain("2 live candidates");
     expect(harness.container.textContent).toContain("Scope preview");
     expect(
       harness.container
         .querySelector("[data-testid='session-probe']")
-        ?.getAttribute("data-hovered-scope"),
+        ?.getAttribute("data-hovered-scope")
     ).toBe("similar");
 
     harness.cleanup();
@@ -446,13 +449,17 @@ describe("@sightglass/react provider", () => {
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(harness.container.textContent).toContain("Update token --button-radius");
-    expect(harness.container.textContent).toContain("Update all card-action components");
+    expect(harness.container.textContent).toContain(
+      "Update token --button-radius"
+    );
+    expect(harness.container.textContent).toContain(
+      "Update all card-action components"
+    );
     expect(
-      harness.container.querySelector("[data-scope-option='component']"),
+      harness.container.querySelector("[data-scope-option='component']")
     ).not.toBeNull();
     expect(
-      harness.container.querySelector("[data-scope-option='token']"),
+      harness.container.querySelector("[data-scope-option='token']")
     ).not.toBeNull();
 
     act(() => {
@@ -476,12 +483,14 @@ describe("@sightglass/react provider", () => {
     });
 
     expect(harness.container.textContent).toContain("Critique");
-    expect(harness.container.textContent).toContain("Document language is missing");
     expect(harness.container.textContent).toContain(
-      "The interaction animates broad or layout-affecting properties",
+      "Document language is missing"
+    );
+    expect(harness.container.textContent).toContain(
+      "The interaction animates broad or layout-affecting properties"
     );
     expect(
-      harness.container.querySelector("[data-critique-scope='page']"),
+      harness.container.querySelector("[data-critique-scope='page']")
     ).not.toBeNull();
 
     act(() => {
@@ -493,9 +502,11 @@ describe("@sightglass/react provider", () => {
     expect(
       harness.container
         .querySelector("[data-critique-perspective='jhey']")
-        ?.getAttribute("aria-pressed"),
+        ?.getAttribute("aria-pressed")
     ).toBe("true");
-    expect(harness.container.textContent).toContain("Turn this into an edit plan");
+    expect(harness.container.textContent).toContain(
+      "Turn this into an edit plan"
+    );
 
     harness.cleanup();
   });
@@ -512,14 +523,14 @@ describe("@sightglass/react provider", () => {
     expect(harness.container.textContent).toContain("Explore");
     expect(harness.container.textContent).toContain("More playful");
     expect(
-      harness.container.querySelector("[data-direction-id='playful']"),
+      harness.container.querySelector("[data-direction-id='playful']")
     ).not.toBeNull();
     expect(harness.container.textContent).toContain("Motion lab");
     expect(
-      harness.container.querySelector("[data-storyboard-step='travel']"),
+      harness.container.querySelector("[data-storyboard-step='travel']")
     ).not.toBeNull();
     expect(
-      harness.container.querySelector("[data-motion-control='duration']"),
+      harness.container.querySelector("[data-motion-control='duration']")
     ).not.toBeNull();
 
     act(() => {
@@ -562,15 +573,15 @@ describe("@sightglass/react provider", () => {
     expect(harness.container.textContent).toContain("Session review");
     expect(harness.container.textContent).toContain("Saved Current review.");
     expect(
-      harness.container.querySelector("[data-session-review-artifact]"),
+      harness.container.querySelector("[data-session-review-artifact]")
     ).not.toBeNull();
     expect(
       (
         harness.container.querySelector(
-          "[data-session-payload]",
+          "[data-session-payload]"
         ) as HTMLTextAreaElement | null
-      )?.value,
-    ).toContain("\"sessionId\":");
+      )?.value
+    ).toContain('"sessionId":');
 
     harness.cleanup();
   });
@@ -594,7 +605,7 @@ describe("@sightglass/react provider", () => {
           canUndo: true,
           canRedo: false,
         },
-      }),
+      })
     );
     const harness = renderHarness(controller);
 
@@ -602,12 +613,12 @@ describe("@sightglass/react provider", () => {
     expect(
       harness.container
         .querySelector("[data-command='undo']")
-        ?.hasAttribute("disabled"),
+        ?.hasAttribute("disabled")
     ).toBe(false);
     expect(
       harness.container
         .querySelector("[data-command='redo']")
-        ?.hasAttribute("disabled"),
+        ?.hasAttribute("disabled")
     ).toBe(true);
 
     harness.cleanup();
@@ -620,15 +631,21 @@ describe("@sightglass/react provider", () => {
 
     try {
       process.chdir(join(testDirectory, "../.."));
-      providerSource = await readFile(join(testDirectory, "provider.tsx"), "utf8");
-      hookSource = await readFile(join(testDirectory, "use-sightglass.ts"), "utf8");
+      providerSource = await readFile(
+        join(testDirectory, "provider.tsx"),
+        "utf8"
+      );
+      hookSource = await readFile(
+        join(testDirectory, "use-sightglass.ts"),
+        "utf8"
+      );
     } finally {
       process.chdir(originalCwd);
     }
 
     expect(providerSource).toContain("createSightglassController");
     expect(`${providerSource}\n${hookSource}`).not.toMatch(
-      /identifySelection|resolveBestElement|findSimilarElements|createMutationEngine|MutationHistoryStore/,
+      /identifySelection|resolveBestElement|findSimilarElements|createMutationEngine|MutationHistoryStore/
     );
   });
 
@@ -645,11 +662,10 @@ describe("@sightglass/react provider", () => {
       root.render(
         <SightglassProvider controller={firstController}>
           <Toolbar />
-        </SightglassProvider>,
+        </SightglassProvider>
       );
     });
 
-    expect(firstController.mount).toHaveBeenCalledTimes(1);
     expect(firstController.destroy).toHaveBeenCalledTimes(0);
     expect(container.textContent).toContain("Start editing");
 
@@ -657,12 +673,11 @@ describe("@sightglass/react provider", () => {
       root.render(
         <SightglassProvider controller={secondController}>
           <Toolbar />
-        </SightglassProvider>,
+        </SightglassProvider>
       );
     });
 
     expect(firstController.destroy).toHaveBeenCalledTimes(1);
-    expect(secondController.mount).toHaveBeenCalledTimes(1);
     expect(container.textContent).toContain("Editing live");
 
     act(() => {
@@ -731,8 +746,12 @@ describe("@sightglass/react provider", () => {
             data-critique-perspective={reviewDraft.critiquePerspective}
             data-critique-scope={reviewDraft.critiqueScope}
             data-selected-finding-id={reviewDraft.selectedFindingId ?? "none"}
-            data-selected-direction-id={reviewDraft.selectedDirectionId ?? "none"}
-            data-motion-duration={String(reviewDraft.motionValues.duration ?? 0)}
+            data-selected-direction-id={
+              reviewDraft.selectedDirectionId ?? "none"
+            }
+            data-motion-duration={String(
+              reviewDraft.motionValues.duration ?? 0
+            )}
           />
         </div>
       );
@@ -742,7 +761,7 @@ describe("@sightglass/react provider", () => {
       root.render(
         <SightglassProvider controller={controller}>
           <ReviewDraftProbe />
-        </SightglassProvider>,
+        </SightglassProvider>
       );
     });
 
@@ -752,7 +771,8 @@ describe("@sightglass/react provider", () => {
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    const probe = () => container.querySelector("[data-testid='review-draft-probe']");
+    const probe = () =>
+      container.querySelector("[data-testid='review-draft-probe']");
 
     expect(probe()?.getAttribute("data-critique-perspective")).toBe("jhey");
     expect(probe()?.getAttribute("data-critique-scope")).toBe("page");
@@ -781,7 +801,9 @@ describe("@sightglass/react provider", () => {
   });
 
   it("supports controllers whose store methods rely on instance binding", () => {
-    const controller = new ClassBackedController(createSnapshot({ active: false }));
+    const controller = new ClassBackedController(
+      createSnapshot({ active: false })
+    );
     const harness = renderHarness(controller);
 
     expect(harness.container.textContent).toContain("Start editing");

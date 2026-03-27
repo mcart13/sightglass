@@ -21,14 +21,13 @@ export interface SightglassSessionSnapshot {
 }
 
 export interface SightglassController {
-  mount(): void;
   destroy(): void;
   subscribe(listener: () => void): () => void;
   getSnapshot(): Readonly<SightglassSessionSnapshot>;
   setActive(active: boolean): void;
   inspectAtPoint(point: SelectionPoint): void;
   apply(
-    transaction: Readonly<SessionTransaction>,
+    transaction: Readonly<SessionTransaction>
   ): Promise<Readonly<MutationEngineSnapshot>>;
   undo(): Promise<Readonly<MutationEngineSnapshot>>;
   redo(): Promise<Readonly<MutationEngineSnapshot>>;
@@ -46,7 +45,7 @@ const emptySelection = (): Readonly<SelectionResult> =>
   });
 
 const toReadonlySelection = (
-  selection: SelectionResult,
+  selection: SelectionResult
 ): Readonly<SelectionResult> =>
   Object.freeze({
     best: selection.best,
@@ -77,7 +76,7 @@ const createResolveTargets = (document: Document) => {
 
 const createSnapshot = (
   overrides: Partial<SightglassSessionSnapshot>,
-  previous?: Readonly<SightglassSessionSnapshot>,
+  previous?: Readonly<SightglassSessionSnapshot>
 ): Readonly<SightglassSessionSnapshot> =>
   Object.freeze({
     active: previous?.active ?? false,
@@ -94,7 +93,7 @@ const createSnapshot = (
   });
 
 export const createSightglassController = (
-  options: CreateSightglassControllerOptions,
+  options: CreateSightglassControllerOptions
 ): SightglassController => {
   const mutationEngine =
     options.mutationEngine ??
@@ -118,8 +117,6 @@ export const createSightglassController = (
   };
 
   return {
-    mount() {},
-
     destroy() {
       listeners.clear();
     },
@@ -145,7 +142,11 @@ export const createSightglassController = (
 
     inspectAtPoint(point) {
       const selectedElement = resolveBestElement(options.document, point);
-      const selection = identifySelection(options.document, point);
+      const selection = identifySelection(
+        options.document,
+        point,
+        selectedElement
+      );
 
       updateSnapshot({
         selectedElement,

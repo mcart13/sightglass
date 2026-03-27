@@ -2,7 +2,13 @@ import {
   EDIT_SCOPES,
   EDIT_SEMANTIC_KINDS,
   generateAnchor,
+  isIsoTimestamp,
+  isNullableString,
+  isOneOf,
+  isRecord,
   isSessionTransaction,
+  isString,
+  isStringArray,
   isTargetAnchor,
   type MutationEngineSnapshot,
   type SelectionAnchor,
@@ -45,7 +51,9 @@ export interface ReviewDraftSnapshot {
   readonly critiqueScope: CritiqueScope;
   readonly selectedFindingId: string | null;
   readonly selectedDirectionId: string | null;
-  readonly motionValues: Readonly<Partial<Record<MotionTuningControlId, number>>>;
+  readonly motionValues: Readonly<
+    Partial<Record<MotionTuningControlId, number>>
+  >;
 }
 
 export interface SessionRecord {
@@ -80,34 +88,11 @@ export interface CreateSessionRecordOptions {
   readonly updatedAt?: string;
 }
 
-const ISO_TIMESTAMP_PATTERN =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
-const isString = (value: unknown): value is string => typeof value === "string";
-
-const isNullableString = (value: unknown): value is string | null =>
-  typeof value === "string" || value === null;
-
-const isStringArray = (value: unknown): value is readonly string[] =>
-  Array.isArray(value) && value.every(isString);
-
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
-const isBoolean = (value: unknown): value is boolean => typeof value === "boolean";
-
-const isOneOf = <T extends readonly string[]>(
-  value: unknown,
-  allowed: T,
-): value is T[number] => isString(value) && allowed.includes(value);
-
-const isIsoTimestamp = (value: unknown): value is string =>
-  isString(value) &&
-  ISO_TIMESTAMP_PATTERN.test(value) &&
-  Number.isFinite(Date.parse(value));
+const isBoolean = (value: unknown): value is boolean =>
+  typeof value === "boolean";
 
 const isSelectionAnchor = (value: unknown): value is SelectionAnchor =>
   isRecord(value) &&
@@ -126,7 +111,7 @@ const isStoredAppliedState = (value: unknown): value is StoredAppliedState =>
   isString(value.after);
 
 const isStoredHistorySnapshot = (
-  value: unknown,
+  value: unknown
 ): value is Readonly<StoredHistorySnapshot> =>
   isRecord(value) &&
   Array.isArray(value.applied) &&
@@ -135,7 +120,7 @@ const isStoredHistorySnapshot = (
   isBoolean(value.canRedo);
 
 const isReviewDraftSnapshotValue = (
-  value: unknown,
+  value: unknown
 ): value is Readonly<ReviewDraftSnapshot> =>
   isRecord(value) &&
   isOneOf(value.critiquePerspective, CRITIQUE_PERSPECTIVES) &&
@@ -153,9 +138,10 @@ const isManifestTarget = (value: unknown): boolean =>
   (value.semanticLabel === undefined || isString(value.semanticLabel));
 
 const isCritiqueCategoryArray = (
-  value: unknown,
+  value: unknown
 ): value is readonly CritiqueCategory[] =>
-  Array.isArray(value) && value.every((entry) => isOneOf(entry, CRITIQUE_CATEGORIES));
+  Array.isArray(value) &&
+  value.every((entry) => isOneOf(entry, CRITIQUE_CATEGORIES));
 
 const isCritiqueFinding = (value: unknown): boolean =>
   isRecord(value) &&
@@ -199,7 +185,7 @@ const isCritiqueGroups = (value: unknown): boolean =>
   });
 
 const isCritiqueReportValue = (
-  value: unknown,
+  value: unknown
 ): value is Readonly<CritiqueReport> =>
   isRecord(value) &&
   isCritiqueContext(value.context) &&
@@ -210,7 +196,7 @@ const isCritiqueReportValue = (
   isOneOf(value.scope, CRITIQUE_SCOPES);
 
 const isDesignDirectionValue = (
-  value: unknown,
+  value: unknown
 ): value is Readonly<DesignDirection> =>
   isRecord(value) &&
   isOneOf(value.id, DESIGN_DIRECTION_IDS) &&
@@ -228,10 +214,15 @@ const isMotionStoryboardStep = (value: unknown): boolean =>
   isString(value.title) &&
   isString(value.description) &&
   isFiniteNumber(value.durationMs) &&
-  isOneOf(value.emphasis, ["enter", "settle", "exit", "reduced-motion"] as const);
+  isOneOf(value.emphasis, [
+    "enter",
+    "settle",
+    "exit",
+    "reduced-motion",
+  ] as const);
 
 const isMotionStoryboardValue = (
-  value: unknown,
+  value: unknown
 ): value is Readonly<MotionStoryboard> =>
   isRecord(value) &&
   isOneOf(value.pipelineTier, ["compositor-safe", "layout-risk"] as const) &&
@@ -253,7 +244,7 @@ const isMotionTuningControl = (value: unknown): boolean =>
   isString(value.guidance);
 
 const isMotionTuningSchemaValue = (
-  value: unknown,
+  value: unknown
 ): value is Readonly<MotionTuningSchema> =>
   isRecord(value) &&
   Array.isArray(value.controls) &&
@@ -261,7 +252,9 @@ const isMotionTuningSchemaValue = (
   isStringArray(value.performanceNotes) &&
   isStringArray(value.reducedMotionNotes);
 
-const isChangeManifestValue = (value: unknown): value is Readonly<ChangeManifest> =>
+const isChangeManifestValue = (
+  value: unknown
+): value is Readonly<ChangeManifest> =>
   isRecord(value) &&
   isString(value.route) &&
   isString(value.sessionId) &&
@@ -270,7 +263,9 @@ const isChangeManifestValue = (value: unknown): value is Readonly<ChangeManifest
   Array.isArray(value.transactions) &&
   value.transactions.every(isSessionTransaction);
 
-const isReviewArtifactValue = (value: unknown): value is Readonly<ReviewArtifact> =>
+const isReviewArtifactValue = (
+  value: unknown
+): value is Readonly<ReviewArtifact> =>
   isRecord(value) &&
   isString(value.route) &&
   isString(value.sessionId) &&
@@ -289,7 +284,7 @@ const isReviewArtifactValue = (value: unknown): value is Readonly<ReviewArtifact
   isString(value.prompt);
 
 const toStoredAppliedState = (
-  state: MutationEngineSnapshot["applied"][number],
+  state: MutationEngineSnapshot["applied"][number]
 ): StoredAppliedState =>
   Object.freeze({
     anchor: generateAnchor(state.target),
@@ -302,7 +297,7 @@ const toStoredAppliedState = (
   });
 
 export const serializeHistorySnapshot = (
-  history: Readonly<MutationEngineSnapshot>,
+  history: Readonly<MutationEngineSnapshot>
 ): Readonly<StoredHistorySnapshot> =>
   Object.freeze({
     applied: Object.freeze(history.applied.map(toStoredAppliedState)),
@@ -311,7 +306,7 @@ export const serializeHistorySnapshot = (
   });
 
 export const createReviewDraftSnapshot = (
-  draft: ReviewDraftSnapshot,
+  draft: ReviewDraftSnapshot
 ): Readonly<ReviewDraftSnapshot> =>
   Object.freeze({
     critiquePerspective: draft.critiquePerspective,
@@ -321,7 +316,9 @@ export const createReviewDraftSnapshot = (
     motionValues: Object.freeze({ ...draft.motionValues }),
   });
 
-export const isSessionRecord = (value: unknown): value is Readonly<SessionRecord> =>
+export const isSessionRecord = (
+  value: unknown
+): value is Readonly<SessionRecord> =>
   isRecord(value) &&
   isString(value.id) &&
   isString(value.name) &&
@@ -339,7 +336,7 @@ export const isSessionRecord = (value: unknown): value is Readonly<SessionRecord
   isReviewArtifactValue(value.reviewArtifact);
 
 export const assertSessionRecord = (
-  value: unknown,
+  value: unknown
 ): Readonly<SessionRecord> => {
   if (!isSessionRecord(value)) {
     throw new Error("Invalid Sightglass session payload.");
@@ -349,7 +346,7 @@ export const assertSessionRecord = (
 };
 
 export const createSessionRecord = (
-  options: CreateSessionRecordOptions,
+  options: CreateSessionRecordOptions
 ): Readonly<SessionRecord> => {
   const timestamp = options.updatedAt ?? new Date().toISOString();
 

@@ -25,23 +25,24 @@ interface CreateIndexedDbSessionStoreOptions {
   readonly indexedDb?: IDBFactory;
 }
 
-const cloneRecord = (record: Readonly<SessionRecord>): Readonly<SessionRecord> =>
-  structuredClone(record);
+const cloneRecord = (
+  record: Readonly<SessionRecord>
+): Readonly<SessionRecord> => structuredClone(record);
 
 const cloneAndSortRecords = (
-  records: Iterable<Readonly<SessionRecord>>,
+  records: Iterable<Readonly<SessionRecord>>
 ): readonly SessionRecord[] =>
   Object.freeze(
     [...records]
       .map((record) => cloneRecord(record))
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
   );
 
 export const createMemorySessionAdapter = (
-  initialRecords: readonly SessionRecord[] = [],
+  initialRecords: readonly SessionRecord[] = []
 ): SessionStoreAdapter => {
   const records = new Map(
-    initialRecords.map((record) => [record.id, cloneRecord(record)]),
+    initialRecords.map((record) => [record.id, cloneRecord(record)])
   );
 
   return {
@@ -76,7 +77,7 @@ const promisifyTransaction = (transaction: IDBTransaction): Promise<void> =>
 
 const openIndexedDb = async (
   indexedDb: IDBFactory,
-  databaseName: string,
+  databaseName: string
 ): Promise<IDBDatabase> => {
   const request = indexedDb.open(databaseName, 1);
 
@@ -93,13 +94,13 @@ const openIndexedDb = async (
 
 const createIndexedDbAdapter = async (
   indexedDb: IDBFactory,
-  databaseName: string,
+  databaseName: string
 ): Promise<SessionStoreAdapter> => {
   const database = await openIndexedDb(indexedDb, databaseName);
 
   const transact = async <T>(
     mode: IDBTransactionMode,
-    operation: (store: IDBObjectStore) => IDBRequest<T>,
+    operation: (store: IDBObjectStore) => IDBRequest<T>
   ): Promise<T> => {
     const transaction = database.transaction(STORE_NAME, mode);
     const request = operation(transaction.objectStore(STORE_NAME));
@@ -125,7 +126,9 @@ const createIndexedDbAdapter = async (
       return record ? cloneRecord(record as SessionRecord) : null;
     },
     async list() {
-      const records = (await transact("readonly", (store) => store.getAll())) as SessionRecord[];
+      const records = (await transact("readonly", (store) =>
+        store.getAll()
+      )) as SessionRecord[];
       return cloneAndSortRecords(records);
     },
     async delete(id) {
@@ -139,7 +142,7 @@ const parseSessionPayload = (payload: string): SessionRecord => {
 };
 
 const resolveSessionAdapter = async (
-  options: CreateIndexedDbSessionStoreOptions,
+  options: CreateIndexedDbSessionStoreOptions
 ): Promise<SessionStoreAdapter> => {
   if (options.adapter) {
     return options.adapter;
@@ -155,7 +158,7 @@ const resolveSessionAdapter = async (
   try {
     return await createIndexedDbAdapter(
       indexedDbFactory,
-      options.databaseName ?? DEFAULT_DATABASE_NAME,
+      options.databaseName ?? DEFAULT_DATABASE_NAME
     );
   } catch {
     return createMemorySessionAdapter();
@@ -163,15 +166,14 @@ const resolveSessionAdapter = async (
 };
 
 export const createIndexedDbSessionStore = async (
-  options: CreateIndexedDbSessionStoreOptions = {},
+  options: CreateIndexedDbSessionStoreOptions = {}
 ): Promise<SessionStore> => {
   const adapter = await resolveSessionAdapter(options);
 
   return {
     async save(record) {
-      const saved = cloneRecord(record);
-      await adapter.put(saved);
-      return saved;
+      await adapter.put(record);
+      return cloneRecord(record);
     },
     async load(id) {
       return adapter.get(id);

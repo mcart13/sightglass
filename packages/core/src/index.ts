@@ -11,12 +11,19 @@ export type {
 export {
   EDIT_SCOPES,
   EDIT_SEMANTIC_KINDS,
+  ISO_TIMESTAMP_PATTERN,
   assertSessionTransaction,
   createEditOperation,
   createSessionTransaction,
   createTargetAnchor,
   isEditOperation,
+  isIsoTimestamp,
+  isNullableString,
+  isOneOf,
+  isRecord,
   isSessionTransaction,
+  isString,
+  isStringArray,
   isTargetAnchor,
 } from "./contracts";
 export {
@@ -25,8 +32,8 @@ export {
   selectionInternals,
 } from "./selection/generate-anchor.js";
 export {
+  INTERACTIVE_SELECTOR,
   createSelectionMatch,
-  findBestElement,
   resolveBestElement,
 } from "./selection/find-best-element.js";
 export { findSimilarElements } from "./selection/find-similar-elements.js";
@@ -41,9 +48,7 @@ export {
 } from "./analyze/component-detector.js";
 export { detectTokenCandidates } from "./analyze/token-detector.js";
 export { createMutationEngine } from "./mutation/mutation-engine.js";
-export {
-  createTextSession,
-} from "./text/text-session.js";
+export { createTextSession } from "./text/text-session.js";
 export {
   restoreRichText,
   serializeRichText,
@@ -61,9 +66,7 @@ export type {
   SemanticTokenCandidate,
   SemanticTokenKind,
 } from "./analyze/token-detector.js";
-export type {
-  SelectionAnchor,
-} from "./selection/generate-anchor.js";
+export type { SelectionAnchor } from "./selection/generate-anchor.js";
 export type {
   SelectionMatch,
   SelectionPoint,
