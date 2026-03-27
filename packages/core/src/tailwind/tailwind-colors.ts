@@ -20,9 +20,12 @@ interface PaletteEntry {
 }
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-  const cleaned = hex.replace("#", "");
-  if (cleaned.length !== 6) return null;
-  const num = parseInt(cleaned, 16);
+  let h = hex.replace("#", "").toLowerCase();
+  if (h.length === 3) {
+    h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  }
+  if (h.length !== 6) return null;
+  const num = parseInt(h, 16);
   if (Number.isNaN(num)) return null;
   return {
     r: (num >> 16) & 0xff,

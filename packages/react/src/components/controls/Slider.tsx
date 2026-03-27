@@ -34,12 +34,18 @@ function clampAndStep(
   }
   if (stops && stops.length > 0) {
     const range = max - min;
+    const ratio = (v - min) / range;
+    let bestStop: SliderStop | null = null;
+    let bestDist = Infinity;
     for (const s of stops) {
-      if (Math.abs(v - s.value) / range <= SNAP_THRESHOLD) {
-        v = s.value;
-        break;
+      const stopRatio = (s.value - min) / range;
+      const dist = Math.abs(ratio - stopRatio);
+      if (dist <= SNAP_THRESHOLD && dist < bestDist) {
+        bestDist = dist;
+        bestStop = s;
       }
     }
+    if (bestStop) v = bestStop.value;
   }
   return Math.round(v * 1000) / 1000;
 }
@@ -66,7 +72,7 @@ export function Slider({
   const valueFromClientX = useCallback(
     (clientX: number) => {
       const el = trackRef.current;
-      if (!el) return value;
+      if (!el) return min;
       const rect = el.getBoundingClientRect();
       const ratio = Math.max(
         0,
@@ -75,7 +81,7 @@ export function Slider({
       const raw = min + ratio * (max - min);
       return clampAndStep(raw, min, max, step, stops);
     },
-    [min, max, step, stops, value]
+    [min, max, step, stops]
   );
 
   const onPointerDown = useCallback(
@@ -193,7 +199,12 @@ export function Slider({
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={valueStyle}>{displayValue}</span>
           {changed && onReset && (
-            <button style={resetStyle} title="Reset" onClick={onReset}>
+            <button
+              type="button"
+              style={resetStyle}
+              title="Reset"
+              onClick={onReset}
+            >
               ↩
             </button>
           )}

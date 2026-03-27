@@ -1,5 +1,12 @@
-/**
- * Toolbar is now integrated into EditorPanel as a single unified component.
- * This export is kept for backwards compatibility.
- */
-export const Toolbar = () => null;
+let toolbarWarned = false;
+
+/** @deprecated Use EditorPanel instead. Toolbar is now integrated into EditorPanel. */
+export const Toolbar = () => {
+  if (!toolbarWarned) {
+    console.warn(
+      "[@sightglass/react] <Toolbar /> is deprecated. Use <EditorPanel /> instead, which includes the toolbar."
+    );
+    toolbarWarned = true;
+  }
+  return null;
+};

@@ -301,9 +301,6 @@ export const EditorPanel = () => {
             </span>
           )}
         </button>
-        <button type="button" style={barBtn} title="Clear all changes">
-          <TrashIcon />
-        </button>
         <button
           type="button"
           style={{

@@ -33,6 +33,7 @@ export const unmountCursorStyle = (ownerDocument: Document): void => {
   const next = Math.max(0, prev - 1);
   counts.set(ownerDocument, next);
   if (next > 0) return;
+  counts.delete(ownerDocument);
 
   const existing = ownerDocument.getElementById(CURSOR_STYLE_ID);
   if (existing) {

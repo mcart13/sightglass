@@ -117,8 +117,15 @@ export function ColorPicker({
         setOpen(false);
       }
     }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("pointerdown", handleClick);
-    return () => document.removeEventListener("pointerdown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("pointerdown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [open]);
 
   const [h, s, l] = isValidHex(value) ? hexToHsl(value) : [0, 0, 50];
@@ -241,6 +248,7 @@ export function ColorPicker({
         <span style={labelStyle}>{label}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button
+            type="button"
             ref={triggerRef}
             style={triggerStyle}
             onClick={() => setOpen(!open)}
@@ -249,7 +257,12 @@ export function ColorPicker({
             <span>{value}</span>
           </button>
           {changed && onReset && (
-            <button style={resetStyle} title="Reset" onClick={onReset}>
+            <button
+              type="button"
+              style={resetStyle}
+              title="Reset"
+              onClick={onReset}
+            >
               ↩
             </button>
           )}

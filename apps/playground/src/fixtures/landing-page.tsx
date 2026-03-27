@@ -577,10 +577,18 @@ export const LandingPageFixture = () => (
         >
           Product
         </strong>
-        <span style={footerLinkStyle}>Features</span>
-        <span style={footerLinkStyle}>Pricing</span>
-        <span style={footerLinkStyle}>Changelog</span>
-        <span style={footerLinkStyle}>Roadmap</span>
+        <a href="#" style={footerLinkStyle}>
+          Features
+        </a>
+        <a href="#" style={footerLinkStyle}>
+          Pricing
+        </a>
+        <a href="#" style={footerLinkStyle}>
+          Changelog
+        </a>
+        <a href="#" style={footerLinkStyle}>
+          Roadmap
+        </a>
       </div>
       <div style={{ display: "grid", gap: 4, alignContent: "start" }}>
         <strong
@@ -593,10 +601,18 @@ export const LandingPageFixture = () => (
         >
           Resources
         </strong>
-        <span style={footerLinkStyle}>Documentation</span>
-        <span style={footerLinkStyle}>API Reference</span>
-        <span style={footerLinkStyle}>Blog</span>
-        <span style={footerLinkStyle}>Community</span>
+        <a href="#" style={footerLinkStyle}>
+          Documentation
+        </a>
+        <a href="#" style={footerLinkStyle}>
+          API Reference
+        </a>
+        <a href="#" style={footerLinkStyle}>
+          Blog
+        </a>
+        <a href="#" style={footerLinkStyle}>
+          Community
+        </a>
       </div>
       <div style={{ display: "grid", gap: 4, alignContent: "start" }}>
         <strong
@@ -609,10 +625,18 @@ export const LandingPageFixture = () => (
         >
           Company
         </strong>
-        <span style={footerLinkStyle}>About</span>
-        <span style={footerLinkStyle}>Careers</span>
-        <span style={footerLinkStyle}>Privacy</span>
-        <span style={footerLinkStyle}>Terms</span>
+        <a href="#" style={footerLinkStyle}>
+          About
+        </a>
+        <a href="#" style={footerLinkStyle}>
+          Careers
+        </a>
+        <a href="#" style={footerLinkStyle}>
+          Privacy
+        </a>
+        <a href="#" style={footerLinkStyle}>
+          Terms
+        </a>
       </div>
     </footer>
   </section>

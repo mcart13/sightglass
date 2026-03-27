@@ -160,10 +160,12 @@ export const createSightglassController = (
         return;
       }
 
-      if (!active && textSession.current()) {
-        const edit = textSession.current()!;
-        edit.target.removeAttribute("contenteditable");
-        textSession.cancelTextEdit();
+      if (!active) {
+        const edit = textSession.current();
+        if (edit) {
+          edit.target.removeAttribute("contenteditable");
+          textSession.cancelTextEdit();
+        }
         updateSnapshot({ active, isEditingText: false });
         return;
       }
@@ -172,8 +174,8 @@ export const createSightglassController = (
     },
 
     inspectAtPoint(point) {
-      if (textSession.current()) {
-        const edit = textSession.current()!;
+      const edit = textSession.current();
+      if (edit) {
         edit.target.removeAttribute("contenteditable");
         textSession.cancelTextEdit();
       }
@@ -225,9 +227,21 @@ export const createSightglassController = (
     async commitTextEdit() {
       const edit = textSession.current();
       if (!edit) return;
+
       edit.target.removeAttribute("contenteditable");
-      const history = await textSession.commitTextEdit();
-      updateSnapshot({ isEditingText: false, history });
+      try {
+        const history = await textSession.commitTextEdit();
+        updateSnapshot({ isEditingText: false, history });
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          err.message.includes("No active text edit")
+        ) {
+          updateSnapshot({ isEditingText: false });
+        } else {
+          throw err;
+        }
+      }
     },
 
     cancelTextEdit() {

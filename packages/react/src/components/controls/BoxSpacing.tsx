@@ -134,7 +134,7 @@ export function BoxSpacing({
         : "rgba(255,255,255,0.4)",
     fontSize: 12,
     fontWeight: 500,
-    cursor: "ew-resize",
+    cursor: side === "top" || side === "bottom" ? "ns-resize" : "ew-resize",
     userSelect: "none",
     transition: "background 0.15s, color 0.15s",
     touchAction: "none",

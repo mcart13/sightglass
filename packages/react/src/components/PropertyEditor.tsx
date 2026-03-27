@@ -18,17 +18,12 @@ import {
 // --- helpers ---
 
 function rgbToHex(rgb: string): string {
-  const match = rgb.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-  if (!match) return "#000000";
-  const r = parseInt(match[1], 10);
-  const g = parseInt(match[2], 10);
-  const b = parseInt(match[3], 10);
-  return (
-    "#" +
-    r.toString(16).padStart(2, "0") +
-    g.toString(16).padStart(2, "0") +
-    b.toString(16).padStart(2, "0")
-  );
+  if (rgb.startsWith("#")) return rgb;
+  if (rgb === "transparent" || rgb === "rgba(0, 0, 0, 0)") return "transparent";
+  const match = rgb.match(/\d+/g);
+  if (!match || match.length < 3) return "#000000";
+  const [r, g, b] = match.map(Number);
+  return "#" + [r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("");
 }
 
 function parseNumeric(raw: string): number {
@@ -66,14 +61,14 @@ const FONT_SIZE_STOPS: readonly SliderStop[] = [
 
 // --- hook: read computed styles ---
 
-function useComputedStyles(element: Element | null, historyVersion: number) {
+function useComputedStyles(element: Element | null, history: unknown) {
   return useMemo(() => {
     if (!element) return null;
-    // historyVersion is used as a cache-bust key so the memo
+    // history is used as a cache-bust key so the memo
     // re-evaluates after mutations are applied.
-    void historyVersion;
+    void history;
     return getComputedStyle(element);
-  }, [element, historyVersion]);
+  }, [element, history]);
 }
 
 // --- component ---
@@ -85,8 +80,7 @@ interface PropertyEditorProps {
 
 export function PropertyEditor({ session, commands }: PropertyEditorProps) {
   const element = session.selectedElement;
-  const historyVersion = session.history.applied.length;
-  const computed = useComputedStyles(element, historyVersion);
+  const computed = useComputedStyles(element, session.history);
 
   // Local state for each property
   const [bgColor, setBgColor] = useState("#000000");

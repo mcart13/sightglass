@@ -13,7 +13,7 @@ export interface AlignmentControlProps {
   readonly label: string;
   readonly value: string;
   readonly options?: readonly AlignValue[];
-  readonly onChange: (value: string) => void;
+  readonly onChange: (value: AlignValue) => void;
 }
 
 const DEFAULT_OPTIONS: readonly AlignValue[] = [
@@ -82,6 +82,7 @@ export function AlignmentControl({
         {options.map((opt) => (
           <button
             key={opt}
+            type="button"
             style={buttonStyle(value === opt)}
             title={LABELS[opt]}
             onClick={() => onChange(opt)}

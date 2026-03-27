@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import {
-  CRITIQUE_CATEGORIES,
   CRITIQUE_PERSPECTIVES,
   CRITIQUE_SCOPES,
   runScopedCritique,

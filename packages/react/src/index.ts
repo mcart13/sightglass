@@ -27,4 +27,5 @@ export type {
   ColorPickerProps,
   BoxSpacingProps,
   AlignmentControlProps,
+  AlignValue,
 } from "./components/controls";
