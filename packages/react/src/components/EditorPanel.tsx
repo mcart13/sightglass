@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   useSightglassCommands,
   useSightglassOverlayState,
@@ -232,7 +233,7 @@ export const EditorPanel = () => {
   // Collapsed: single 44x44 button
   if (!overlay.panelOpen) {
     return (
-      <button
+      <motion.button
         type="button"
         data-sightglass-chrome="true"
         style={collapsedStyle}
@@ -240,9 +241,14 @@ export const EditorPanel = () => {
           commands.setPanelOpen(true);
           commands.setActive(true);
         }}
+        initial={{ scale: 0.5, opacity: 0, filter: "blur(8px)" }}
+        animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: "spring", visualDuration: 0.2, bounce: 0.15 }}
       >
         <WandIcon />
-      </button>
+      </motion.button>
     );
   }
 
@@ -251,7 +257,12 @@ export const EditorPanel = () => {
   return (
     <div data-sightglass-chrome="true">
       {/* Toolbar bar - always visible when open */}
-      <div style={toolbarStyle}>
+      <motion.div
+        style={toolbarStyle}
+        initial={{ scale: 0.9, opacity: 0, filter: "blur(8px)" }}
+        animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+        transition={{ type: "spring", visualDuration: 0.25, bounce: 0.1 }}
+      >
         <button type="button" style={copyBtn} title="Copy edits">
           <ClipboardIcon />
           <span>Copy Edits</span>
@@ -289,60 +300,86 @@ export const EditorPanel = () => {
         >
           <CloseIcon />
         </button>
-      </div>
+      </motion.div>
 
       {/* Panel - below toolbar, only when element selected */}
-      {showPanel && (
-        <aside aria-label="Sightglass inspector" style={panelShellStyle}>
-          <div style={panelTabRowStyle}>
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                style={panelTabStyle(activeTab === tab)}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+      <AnimatePresence>
+        {showPanel && (
+          <motion.aside
+            aria-label="Sightglass inspector"
+            style={panelShellStyle}
+            initial={{ opacity: 0, y: -8, filter: "blur(4px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
+            transition={{ type: "spring", visualDuration: 0.25, bounce: 0.05 }}
+          >
+            <motion.div
+              style={panelTabRowStyle}
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.03 } },
+              }}
+            >
+              {TABS.map((tab) => (
+                <motion.button
+                  key={tab}
+                  type="button"
+                  style={panelTabStyle(activeTab === tab)}
+                  onClick={() => setActiveTab(tab)}
+                  variants={{
+                    hidden: { opacity: 0, scale: 0.8 },
+                    visible: { opacity: 1, scale: 1 },
+                  }}
+                  transition={{
+                    type: "spring",
+                    visualDuration: 0.15,
+                    bounce: 0.1,
+                  }}
+                >
+                  {tab}
+                </motion.button>
+              ))}
+            </motion.div>
 
-          <div style={panelScrollStyle}>
-            <div style={panelSectionStyle}>
-              <span style={panelSectionLabelStyle}>Selection</span>
-              <div style={panelRowStyle}>
-                <span style={panelRowLabelStyle}>Target</span>
-                <span style={{ ...panelRowValueStyle, maxWidth: 150 }}>
-                  {primaryAnchor?.selector ?? "Click an element"}
-                </span>
+            <div style={panelScrollStyle}>
+              <div style={panelSectionStyle}>
+                <span style={panelSectionLabelStyle}>Selection</span>
+                <div style={panelRowStyle}>
+                  <span style={panelRowLabelStyle}>Target</span>
+                  <span style={{ ...panelRowValueStyle, maxWidth: 150 }}>
+                    {primaryAnchor?.selector ?? "Click an element"}
+                  </span>
+                </div>
+                <div style={panelRowStyle}>
+                  <span style={panelRowLabelStyle}>Role</span>
+                  <span style={panelRowValueStyle}>
+                    {primaryAnchor?.role ?? "—"}
+                  </span>
+                </div>
+                <div style={panelRowStyle}>
+                  <span style={panelRowLabelStyle}>Scope</span>
+                  <span style={panelRowValueStyle}>
+                    {scopeCount <= 1 ? "—" : `${scopeCount} candidates`}
+                  </span>
+                </div>
               </div>
-              <div style={panelRowStyle}>
-                <span style={panelRowLabelStyle}>Role</span>
-                <span style={panelRowValueStyle}>
-                  {primaryAnchor?.role ?? "—"}
-                </span>
-              </div>
-              <div style={panelRowStyle}>
-                <span style={panelRowLabelStyle}>Scope</span>
-                <span style={panelRowValueStyle}>
-                  {scopeCount <= 1 ? "—" : `${scopeCount} candidates`}
-                </span>
-              </div>
+
+              {activeTab === "Style" && (
+                <SemanticInspector
+                  commands={commands}
+                  overlay={overlay}
+                  session={session}
+                />
+              )}
+              {activeTab === "Issues" && <CritiquePanel session={session} />}
+              {activeTab === "Explore" && <ExplorePanel session={session} />}
+              {activeTab === "Motion" && <MotionLab session={session} />}
             </div>
-
-            {activeTab === "Style" && (
-              <SemanticInspector
-                commands={commands}
-                overlay={overlay}
-                session={session}
-              />
-            )}
-            {activeTab === "Issues" && <CritiquePanel session={session} />}
-            {activeTab === "Explore" && <ExplorePanel session={session} />}
-            {activeTab === "Motion" && <MotionLab session={session} />}
-          </div>
-        </aside>
-      )}
+          </motion.aside>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
