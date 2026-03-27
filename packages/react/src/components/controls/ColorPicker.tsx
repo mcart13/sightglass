@@ -124,10 +124,10 @@ export function ColorPicker({
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    document.addEventListener("pointerdown", handleClick);
+    document.addEventListener("mousedown", handleClick);
     document.addEventListener("keydown", handleKey);
     return () => {
-      document.removeEventListener("pointerdown", handleClick);
+      document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("keydown", handleKey);
     };
   }, [open]);
@@ -254,7 +254,10 @@ export function ColorPicker({
             type="button"
             ref={triggerRef}
             style={triggerStyle}
-            onClick={() => setOpen(!open)}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              setOpen(!open);
+            }}
           >
             <span style={swatchStyle} />
             <span>{value}</span>

@@ -1,10 +1,4 @@
-import {
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-  type CSSProperties,
-} from "react";
+import { useState, useCallback, type CSSProperties } from "react";
 
 type Side = "top" | "right" | "bottom" | "left";
 
@@ -18,27 +12,37 @@ export interface BoxSpacingProps {
   readonly changed?: boolean;
 }
 
-const DRAG_SENSITIVITY = 2; // px per unit
-const MIN_VALUE = 0;
-const MAX_VALUE = 64;
+// Figma-style: click the number to type a value, arrow keys to nudge
 
-function clamp(v: number): number {
-  return Math.max(MIN_VALUE, Math.min(MAX_VALUE, Math.round(v)));
-}
+const inputStyle: CSSProperties = {
+  width: 36,
+  height: 24,
+  padding: 0,
+  border: "1px solid transparent",
+  borderRadius: 4,
+  background: "rgba(255,255,255,0.025)",
+  color: "rgba(255,255,255,0.5)",
+  fontSize: 11,
+  fontWeight: 500,
+  fontVariantNumeric: "tabular-nums",
+  textAlign: "center",
+  outline: "none",
+  fontFamily: "inherit",
+};
 
-// Maps side to drag axis: vertical sides use clientY delta, horizontal use clientX
-function getDelta(side: Side, dx: number, dy: number): number {
-  switch (side) {
-    case "top":
-      return -dy / DRAG_SENSITIVITY;
-    case "bottom":
-      return dy / DRAG_SENSITIVITY;
-    case "left":
-      return -dx / DRAG_SENSITIVITY;
-    case "right":
-      return dx / DRAG_SENSITIVITY;
-  }
-}
+const inputFocusStyle: CSSProperties = {
+  ...inputStyle,
+  borderColor: "#2563eb",
+  color: "#fff",
+  background: "rgba(255,255,255,0.05)",
+};
+
+const innerBoxStyle: CSSProperties = {
+  width: 28,
+  height: 24,
+  borderRadius: 3,
+  border: "1px dashed rgba(255,255,255,0.08)",
+};
 
 export function BoxSpacing({
   label,
@@ -47,183 +51,107 @@ export function BoxSpacing({
   onReset,
   changed = false,
 }: BoxSpacingProps) {
-  const [activeSide, setActiveSide] = useState<Side | null>(null);
-  const dragStart = useRef<{
-    side: Side;
-    startX: number;
-    startY: number;
-    startValue: number;
-  } | null>(null);
+  const [focusedSide, setFocusedSide] = useState<Side | null>(null);
 
-  // Use document-level listeners for drag so pointer capture doesn't
-  // break the event flow (setPointerCapture redirects events to the
-  // captured element, skipping React's synthetic event on the parent).
-  const handlePointerDown = useCallback(
-    (side: Side, e: React.PointerEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setActiveSide(side);
-      dragStart.current = {
-        side,
-        startX: e.clientX,
-        startY: e.clientY,
-        startValue: values[side],
-      };
+  const handleChange = useCallback(
+    (side: Side, raw: string) => {
+      const n = parseInt(raw, 10);
+      if (Number.isFinite(n)) {
+        onChange(side, Math.max(0, Math.min(999, n)));
+      }
     },
-    [values]
+    [onChange]
   );
 
-  useEffect(() => {
-    if (!activeSide) return;
+  const handleKeyDown = useCallback(
+    (side: Side, e: React.KeyboardEvent<HTMLInputElement>) => {
+      const step = e.shiftKey ? 10 : 1;
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        onChange(side, Math.min(999, values[side] + step));
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        onChange(side, Math.max(0, values[side] - step));
+      } else if (e.key === "Enter") {
+        (e.target as HTMLInputElement).blur();
+      }
+    },
+    [onChange, values]
+  );
 
-    const handleMove = (e: PointerEvent) => {
-      const ds = dragStart.current;
-      if (!ds) return;
-      const dx = e.clientX - ds.startX;
-      const dy = e.clientY - ds.startY;
-      const delta = getDelta(ds.side, dx, dy);
-      const next = clamp(ds.startValue + delta);
-      onChange(ds.side, next);
-    };
-
-    const handleUp = () => {
-      dragStart.current = null;
-      setActiveSide(null);
-    };
-
-    document.addEventListener("pointermove", handleMove);
-    document.addEventListener("pointerup", handleUp);
-    return () => {
-      document.removeEventListener("pointermove", handleMove);
-      document.removeEventListener("pointerup", handleUp);
-    };
-  }, [activeSide, onChange]);
-
-  const labelStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    fontSize: 13,
-    fontWeight: 500,
-    color: "#999",
-    minHeight: 28,
-  };
-
-  const resetStyle: CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 20,
-    height: 20,
-    border: "none",
-    borderRadius: 4,
-    background: "transparent",
-    color: "#93c5fd",
-    cursor: "pointer",
-    fontSize: 12,
-    padding: 0,
-  };
-
-  const containerStyle: CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "1fr auto 1fr",
-    gridTemplateRows: "auto auto auto",
-    alignItems: "center",
-    justifyItems: "center",
-    gap: 4,
-    padding: 4,
-  };
-
-  const badgeStyle = (side: Side): CSSProperties => ({
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 28,
-    height: 22,
-    padding: "0 6px",
-    borderRadius: 4,
-    background: activeSide === side ? "#2563eb" : "rgba(255,255,255,0.025)",
-    color:
-      activeSide === side
-        ? "#fff"
-        : changed
-        ? "#93c5fd"
-        : "rgba(255,255,255,0.4)",
-    fontSize: 12,
-    fontWeight: 500,
-    cursor: side === "top" || side === "bottom" ? "ns-resize" : "ew-resize",
-    userSelect: "none",
-    transition: "background 0.15s, color 0.15s",
-    touchAction: "none",
-  });
-
-  const innerBoxStyle: CSSProperties = {
-    width: 36,
-    height: 36,
-    borderRadius: 4,
-    border: "1px dashed rgba(255,255,255,0.1)",
-    background: "rgba(255,255,255,0.015)",
-  };
-
-  const sides: Side[] = ["top", "right", "bottom", "left"];
+  const renderInput = (side: Side, gridArea: string) => (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={values[side]}
+      style={{
+        ...(focusedSide === side ? inputFocusStyle : inputStyle),
+        ...(changed
+          ? { color: focusedSide === side ? "#fff" : "#93c5fd" }
+          : {}),
+        gridArea,
+      }}
+      onChange={(e) => handleChange(side, e.target.value)}
+      onFocus={(e) => {
+        setFocusedSide(side);
+        e.target.select();
+      }}
+      onBlur={() => setFocusedSide(null)}
+      onKeyDown={(e) => handleKeyDown(side, e)}
+      aria-label={`${label} ${side}`}
+    />
+  );
 
   return (
     <div style={{ display: "grid", gap: 4 }}>
-      <div style={labelStyle}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: 13,
+          fontWeight: 500,
+          color: "#999",
+          minHeight: 28,
+        }}
+      >
         <span>{label}</span>
         {changed && onReset && (
-          <button style={resetStyle} title="Reset" onClick={onReset}>
+          <button
+            type="button"
+            style={{
+              padding: 0,
+              border: "none",
+              borderRadius: 4,
+              background: "transparent",
+              color: "#93c5fd",
+              cursor: "pointer",
+              fontSize: 12,
+            }}
+            title="Reset"
+            onClick={onReset}
+          >
             ↩
           </button>
         )}
       </div>
-      <div style={containerStyle}>
-        {/* Row 1: top */}
-        <div />
-        <div
-          style={badgeStyle("top")}
-          onPointerDown={(e) => handlePointerDown("top", e)}
-        >
-          {values.top}
-        </div>
-        <div />
-
-        {/* Row 2: left, center box, right */}
-        <div
-          style={badgeStyle("left")}
-          onPointerDown={(e) => handlePointerDown("left", e)}
-        >
-          {values.left}
-        </div>
-        <div style={innerBoxStyle} />
-        <div
-          style={badgeStyle("right")}
-          onPointerDown={(e) => handlePointerDown("right", e)}
-        >
-          {values.right}
-        </div>
-
-        {/* Row 3: bottom */}
-        <div />
-        <div
-          style={badgeStyle("bottom")}
-          onPointerDown={(e) => handlePointerDown("bottom", e)}
-        >
-          {values.bottom}
-        </div>
-        <div />
-      </div>
-      {/* Screen reader hint */}
-      <span
+      <div
         style={{
-          position: "absolute",
-          width: 1,
-          height: 1,
-          overflow: "hidden",
+          display: "grid",
+          gridTemplateAreas: `". top ." "left center right" ". bottom ."`,
+          gridTemplateColumns: "1fr auto 1fr",
+          alignItems: "center",
+          justifyItems: "center",
+          gap: 2,
+          padding: 4,
         }}
       >
-        {sides.map((s) => `${s}: ${values[s]}`).join(", ")}
-      </span>
+        {renderInput("top", "top")}
+        {renderInput("left", "left")}
+        <div style={{ ...innerBoxStyle, gridArea: "center" }} />
+        {renderInput("right", "right")}
+        {renderInput("bottom", "bottom")}
+      </div>
     </div>
   );
 }
