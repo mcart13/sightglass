@@ -37,7 +37,7 @@
   "scripts": {
     "build": "yarn run -T tsc -p tsconfig.json",
     "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
-    "test": "yarn run -T vitest run --environment jsdom src/provider.test.tsx",
+    "test": "yarn run -T vitest run --environment jsdom src/",
     "lint": "echo 'lint not configured for @sightglass/react yet'"
   }
 }
