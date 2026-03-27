@@ -498,6 +498,39 @@ describe("@sightglass/react provider", () => {
     harness.cleanup();
   });
 
+  it("renders explore directions and motion tuning controls from critique outputs", () => {
+    const harness = renderHarness();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-testid='inspect']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("Explore");
+    expect(harness.container.textContent).toContain("More playful");
+    expect(
+      harness.container.querySelector("[data-direction-id='playful']"),
+    ).not.toBeNull();
+    expect(harness.container.textContent).toContain("Motion lab");
+    expect(
+      harness.container.querySelector("[data-storyboard-step='travel']"),
+    ).not.toBeNull();
+    expect(
+      harness.container.querySelector("[data-motion-control='duration']"),
+    ).not.toBeNull();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-direction-id='playful']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("More playful edit plan");
+
+    harness.cleanup();
+  });
+
   it("passes mutation history state straight through to editing controls", () => {
     const controller = createController(
       createSnapshot({

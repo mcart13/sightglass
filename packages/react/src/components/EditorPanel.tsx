@@ -5,6 +5,8 @@ import {
   useSightglassSessionState,
 } from "../use-sightglass";
 import { CritiquePanel } from "./CritiquePanel";
+import { ExplorePanel } from "./ExplorePanel";
+import { MotionLab } from "./MotionLab";
 import { SemanticInspector } from "./SemanticInspector";
 
 const panelStyle: CSSProperties = {
@@ -117,6 +119,8 @@ export const EditorPanel = () => {
         session={session}
       />
       <CritiquePanel session={session} />
+      <ExplorePanel session={session} />
+      <MotionLab session={session} />
     </aside>
   );
 };

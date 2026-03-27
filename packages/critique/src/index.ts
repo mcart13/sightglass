@@ -1,8 +1,19 @@
-import type { CritiqueCategory, CritiqueFinding, CritiqueGroups, CritiqueReport, CritiquePerspective, RunCritiqueOptions } from "./contracts.js";
+import type {
+  CritiqueCategory,
+  CritiqueFinding,
+  CritiqueGroups,
+  CritiqueReport,
+  CritiquePerspective,
+  RunCritiqueOptions,
+} from "./contracts.js";
 import { CRITIQUE_CATEGORIES } from "./contracts.js";
 import { inferCritiqueContext } from "./context/infer-context.js";
+import { buildExploreEditPlan } from "./explore/edit-plan.js";
+import { generateDesignDirections } from "./explore/design-directions.js";
 import { runAccessibilityLens } from "./lenses/accessibility.js";
 import { runInterfaceDesignLens } from "./lenses/interface-design.js";
+import { buildMotionStoryboard } from "./motion/build-storyboard.js";
+import { createMotionTuningSchema } from "./motion/tuning-schema.js";
 import { runMotionPerformanceLens } from "./lenses/motion-performance.js";
 import { runMotionQualityLens } from "./lenses/motion-quality.js";
 import { runVisualDesignLens } from "./lenses/visual-design.js";
@@ -11,6 +22,10 @@ import { jakubPerspective } from "./perspectives/jakub.js";
 import { jheyPerspective } from "./perspectives/jhey.js";
 
 export * from "./contracts.js";
+export { buildExploreEditPlan } from "./explore/edit-plan.js";
+export { generateDesignDirections } from "./explore/design-directions.js";
+export { buildMotionStoryboard } from "./motion/build-storyboard.js";
+export { createMotionTuningSchema } from "./motion/tuning-schema.js";
 
 const SEVERITY_SCORES = Object.freeze({
   critical: 300,
