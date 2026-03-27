@@ -172,4 +172,73 @@ describe("structured export pipeline", () => {
     expect(reviewArtifact.prompt).toBe(prompt);
     expect(reviewArtifact.beforeScreenshot).toBe("before.png");
   });
+
+  it("preserves transaction order when timestamps match", () => {
+    const target = createTargetAnchor({
+      runtimeId: "button:selected",
+      selector: "[data-testid='selected-target']",
+      path: "main > button:nth-of-type(1)",
+      role: "button",
+      classes: ["cta", "card-action"],
+    });
+    const createdAt = "2026-03-26T12:00:01.000Z";
+    const manifest = createChangeManifest({
+      route: "/playground/landing",
+      sessionId: "session-ordered",
+      targets: [{ anchor: target, scope: "single", semanticLabel: "Primary CTA" }],
+      transactions: [
+        createSessionTransaction({
+          id: "tx-2",
+          scope: "single",
+          targets: [target],
+          operations: [
+            {
+              id: "op-2",
+              property: "color",
+              before: "#111111",
+              after: "#222222",
+              semanticKind: "css",
+            },
+          ],
+          createdAt,
+        }),
+        createSessionTransaction({
+          id: "tx-10",
+          scope: "single",
+          targets: [target],
+          operations: [
+            {
+              id: "op-10",
+              property: "color",
+              before: "#222222",
+              after: "#333333",
+              semanticKind: "css",
+            },
+          ],
+          createdAt,
+        }),
+        createSessionTransaction({
+          id: "tx-1",
+          scope: "single",
+          targets: [target],
+          operations: [
+            {
+              id: "op-1",
+              property: "color",
+              before: "#333333",
+              after: "#444444",
+              semanticKind: "css",
+            },
+          ],
+          createdAt,
+        }),
+      ],
+    });
+
+    expect(manifest.transactions.map((transaction) => transaction.id)).toEqual([
+      "tx-2",
+      "tx-10",
+      "tx-1",
+    ]);
+  });
 });

@@ -52,10 +52,14 @@ const sortTransactions = (
   transactions: readonly SessionTransaction[],
 ): readonly SessionTransaction[] =>
   Object.freeze(
-    [...transactions].sort(
-      (left, right) =>
-        left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id),
-    ),
+    [...transactions]
+      .map((transaction, index) => ({ transaction, index }))
+      .sort(
+        (left, right) =>
+          left.transaction.createdAt.localeCompare(right.transaction.createdAt) ||
+          left.index - right.index,
+      )
+      .map(({ transaction }) => transaction),
   );
 
 const sortCritique = (

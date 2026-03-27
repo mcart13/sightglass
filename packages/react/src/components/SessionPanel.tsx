@@ -36,6 +36,8 @@ interface SessionPanelProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
 }
 
+type ReviewDraftState = ReturnType<typeof useSightglassReviewDraftState>;
+
 const sectionStyle: CSSProperties = {
   display: "grid",
   gap: 10,
@@ -178,6 +180,18 @@ const buildManifestTargets = (
   return Object.freeze(targets);
 };
 
+const applyLoadedRecordEdits = (
+  record: Readonly<SessionRecord>,
+  sessionName: string,
+  reviewDraft: ReviewDraftState,
+): Readonly<SessionRecord> =>
+  Object.freeze({
+    ...record,
+    name: sessionName,
+    reviewDraft: createReviewDraftSnapshot(reviewDraft),
+    updatedAt: new Date().toISOString(),
+  });
+
 export const SessionPanel = ({ session }: SessionPanelProps) => {
   const reviewDraft = useSightglassReviewDraftState();
   const reviewDraftCommands = useSightglassReviewDraftCommands();
@@ -297,7 +311,9 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
     }
   }, [liveSessionSignature, loadedRecordSignature]);
 
-  const record = loadedRecord ?? liveRecord;
+  const record = loadedRecord
+    ? applyLoadedRecordEdits(loadedRecord, sessionName, reviewDraft)
+    : liveRecord;
 
   useEffect(() => {
     let cancelled = false;
