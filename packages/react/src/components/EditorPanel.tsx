@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { cssToTailwind } from "@sightglass/core";
 import {
   useSightglassCommands,
   useSightglassOverlayState,
@@ -266,7 +267,22 @@ export const EditorPanel = () => {
         animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
         transition={{ type: "spring", visualDuration: 0.25, bounce: 0.1 }}
       >
-        <button type="button" style={copyBtn} title="Copy edits">
+        <button
+          type="button"
+          style={copyBtn}
+          title="Copy edits"
+          onClick={() => {
+            const applied = session.history.applied;
+            if (applied.length === 0) return;
+            const lines = applied.map((state) => {
+              const base = `${state.property}: ${state.after}`;
+              if (!overlay.tailwindMode) return base;
+              const tw = cssToTailwind(state.property, state.after);
+              return `${base}  \u2192  ${tw}`;
+            });
+            navigator.clipboard.writeText(lines.join("\n"));
+          }}
+        >
           <ClipboardIcon />
           <span>Copy Edits</span>
           {changeCount > 0 && (
@@ -288,7 +304,19 @@ export const EditorPanel = () => {
         <button type="button" style={barBtn} title="Clear all changes">
           <TrashIcon />
         </button>
-        <button type="button" style={barBtn} title="Settings">
+        <button
+          type="button"
+          style={{
+            ...barBtn,
+            ...(overlay.tailwindMode
+              ? { background: "rgba(59,130,246,0.2)", color: "#60a5fa" }
+              : {}),
+          }}
+          onClick={() => commands.setTailwindMode(!overlay.tailwindMode)}
+          title={
+            overlay.tailwindMode ? "Tailwind mode on" : "Tailwind mode off"
+          }
+        >
           <GearIcon />
         </button>
         <div style={divider} />

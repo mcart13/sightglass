@@ -29,6 +29,7 @@ import { mountCursorStyle, unmountCursorStyle } from "./cursor-style";
 interface OverlayState {
   readonly hoveredScope: EditScope | null;
   readonly panelOpen: boolean;
+  readonly tailwindMode: boolean;
 }
 
 interface SightglassCommands {
@@ -42,6 +43,7 @@ interface SightglassCommands {
   cancelTextEdit(): void;
   setHoveredScope(scope: EditScope | null): void;
   setPanelOpen(open: boolean): void;
+  setTailwindMode(enabled: boolean): void;
 }
 
 interface SightglassProviderProps extends PropsWithChildren {
@@ -116,6 +118,7 @@ export const SightglassProvider = ({
   );
   const [hoveredScope, setHoveredScope] = useState<EditScope | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [tailwindMode, setTailwindMode] = useState(false);
   const [critiquePerspective, setCritiquePerspective] =
     useState<CritiquePerspective>("emil");
   const [critiqueScope, setCritiqueScope] = useState<CritiqueScope>("node");
@@ -148,8 +151,9 @@ export const SightglassProvider = ({
     () => ({
       hoveredScope,
       panelOpen,
+      tailwindMode,
     }),
-    [hoveredScope, panelOpen]
+    [hoveredScope, panelOpen, tailwindMode]
   );
   const commands = useMemo<SightglassCommands>(
     () => ({
@@ -165,6 +169,7 @@ export const SightglassProvider = ({
       cancelTextEdit: () => resolvedController.cancelTextEdit(),
       setHoveredScope,
       setPanelOpen,
+      setTailwindMode,
     }),
     [resolvedController]
   );
