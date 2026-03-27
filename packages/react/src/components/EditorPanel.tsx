@@ -4,6 +4,7 @@ import {
   useSightglassOverlayState,
   useSightglassSessionState,
 } from "../use-sightglass";
+import { CritiquePanel } from "./CritiquePanel";
 import { SemanticInspector } from "./SemanticInspector";
 
 const panelStyle: CSSProperties = {
@@ -115,6 +116,7 @@ export const EditorPanel = () => {
         overlay={overlay}
         session={session}
       />
+      <CritiquePanel session={session} />
     </aside>
   );
 };

@@ -274,13 +274,17 @@ const renderHarness = (controller = createController()) => {
   act(() => {
     root.render(
       <SightglassProvider controller={controller}>
-        <main style={{ ["--button-radius" as string]: "18px" }}>
+        <main
+          data-route="/playground/landing"
+          style={{ ["--button-radius" as string]: "18px" }}
+        >
           <button
             data-testid="selected-target"
             className="cta card-action rounded-lg bg-slate-900 px-4 py-2"
             style={{
               borderRadius: "var(--button-radius)",
               color: "rgb(15, 23, 42)",
+              transition: "all 420ms ease",
             }}
             type="button"
           >
@@ -292,6 +296,7 @@ const renderHarness = (controller = createController()) => {
             style={{
               borderRadius: "var(--button-radius)",
               color: "rgb(15, 23, 42)",
+              transition: "all 420ms ease",
             }}
             type="button"
           >
@@ -455,6 +460,40 @@ describe("@sightglass/react provider", () => {
     });
 
     expect(harness.container.textContent).toContain("component");
+
+    harness.cleanup();
+  });
+
+  it("renders grouped critique findings with perspective and scope switches", () => {
+    const harness = renderHarness();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-testid='inspect']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("Critique");
+    expect(harness.container.textContent).toContain("Document language is missing");
+    expect(harness.container.textContent).toContain(
+      "The interaction animates broad or layout-affecting properties",
+    );
+    expect(
+      harness.container.querySelector("[data-critique-scope='page']"),
+    ).not.toBeNull();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-critique-perspective='jhey']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(
+      harness.container
+        .querySelector("[data-critique-perspective='jhey']")
+        ?.getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(harness.container.textContent).toContain("Turn this into an edit plan");
 
     harness.cleanup();
   });

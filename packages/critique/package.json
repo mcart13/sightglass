@@ -8,10 +8,13 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "@sightglass/core": "workspace:*"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo 'test not configured for @sightglass/critique yet'",
+    "build": "yarn run -T tsc -p tsconfig.json",
+    "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
+    "test": "yarn run -T vitest run",
     "lint": "echo 'lint not configured for @sightglass/critique yet'"
   }
 }
