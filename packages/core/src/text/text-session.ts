@@ -41,8 +41,18 @@ export interface TextSession {
   handleKeyDown(event: TextSessionKeyEvent): Promise<"cancel" | "noop">;
 }
 
-const createFallbackSessionId = (): string =>
-  `text-session-${globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36)}`;
+let fallbackSessionSequence = 0;
+
+const createFallbackSessionId = (): string => {
+  const randomId = globalThis.crypto?.randomUUID?.();
+  if (randomId) {
+    return `text-session-${randomId}`;
+  }
+
+  const sequence = fallbackSessionSequence.toString(36);
+  fallbackSessionSequence += 1;
+  return `text-session-${Date.now().toString(36)}-${sequence}`;
+};
 
 export const createTextSession = (
   options: TextSessionOptions,
@@ -59,12 +69,55 @@ export const createTextSession = (
     return currentEdit;
   };
 
+  const cancelActiveEdit = (): Readonly<ActiveTextEdit> | null => {
+    if (!activeEdit) {
+      return null;
+    }
+
+    const currentEdit = clearActiveEdit();
+    restoreRichText(currentEdit.target, currentEdit.beforeMarkup);
+    return currentEdit;
+  };
+
+  const commitActiveEdit = async (): Promise<Readonly<MutationEngineSnapshot>> => {
+    const currentEdit = clearActiveEdit();
+    const afterMarkup = serializeRichText(currentEdit.target);
+
+    if (afterMarkup === currentEdit.beforeMarkup) {
+      return options.engine.snapshot();
+    }
+
+    return options.engine.apply(
+      createSessionTransaction({
+        id: currentEdit.sessionId,
+        scope: "single",
+        targets: [currentEdit.anchor],
+        operations: [
+          {
+            id: `${currentEdit.sessionId}::text`,
+            property: "innerHTML",
+            before: currentEdit.beforeMarkup,
+            after: afterMarkup,
+            semanticKind: "text",
+          },
+        ],
+        createdAt: currentEdit.createdAt,
+      }),
+    );
+  };
+
   return {
     current() {
       return activeEdit;
     },
 
     startTextEdit(input) {
+      if (activeEdit) {
+        throw new Error(
+          "An active text edit is already in progress. Commit or cancel it before starting a new one.",
+        );
+      }
+
       const sessionId =
         input.sessionId ??
         options.createSessionId?.() ??
@@ -84,40 +137,11 @@ export const createTextSession = (
     },
 
     async commitTextEdit() {
-      const currentEdit = clearActiveEdit();
-      const afterMarkup = serializeRichText(currentEdit.target);
-
-      if (afterMarkup === currentEdit.beforeMarkup) {
-        return options.engine.snapshot();
-      }
-
-      return options.engine.apply(
-        createSessionTransaction({
-          id: currentEdit.sessionId,
-          scope: "single",
-          targets: [currentEdit.anchor],
-          operations: [
-            {
-              id: `${currentEdit.sessionId}::text`,
-              property: "innerHTML",
-              before: currentEdit.beforeMarkup,
-              after: afterMarkup,
-              semanticKind: "text",
-            },
-          ],
-          createdAt: currentEdit.createdAt,
-        }),
-      );
+      return commitActiveEdit();
     },
 
     cancelTextEdit() {
-      if (!activeEdit) {
-        return null;
-      }
-
-      const currentEdit = clearActiveEdit();
-      restoreRichText(currentEdit.target, currentEdit.beforeMarkup);
-      return currentEdit;
+      return cancelActiveEdit();
     },
 
     async handleKeyDown(event) {
@@ -127,7 +151,7 @@ export const createTextSession = (
 
       event.preventDefault?.();
       event.stopPropagation?.();
-      this.cancelTextEdit();
+      cancelActiveEdit();
       return "cancel";
     },
   };

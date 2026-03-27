@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -28,6 +29,8 @@ const emptyHistory = (): MutationEngineSnapshot => ({
   canUndo: false,
   canRedo: false,
 });
+
+const testDirectory = dirname(fileURLToPath(import.meta.url));
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -384,15 +387,62 @@ describe("@sightglass/react provider", () => {
   });
 
   it("keeps controller logic in core instead of rebuilding selection or history in React", async () => {
-    const providerSource = await readFile(join(process.cwd(), "src/provider.tsx"), "utf8");
-    const hookSource = await readFile(
-      join(process.cwd(), "src/use-sightglass.ts"),
-      "utf8",
-    );
+    const originalCwd = process.cwd();
+    let providerSource = "";
+    let hookSource = "";
+
+    try {
+      process.chdir(join(testDirectory, "../.."));
+      providerSource = await readFile(join(testDirectory, "provider.tsx"), "utf8");
+      hookSource = await readFile(join(testDirectory, "use-sightglass.ts"), "utf8");
+    } finally {
+      process.chdir(originalCwd);
+    }
 
     expect(providerSource).toContain("createSightglassController");
     expect(`${providerSource}\n${hookSource}`).not.toMatch(
       /identifySelection|resolveBestElement|findSimilarElements|createMutationEngine|MutationHistoryStore/,
     );
+  });
+
+  it("switches to a new controller prop when the parent provides one", () => {
+    const firstController = createController(createSnapshot({ active: false }));
+    const secondController = createController(createSnapshot({ active: true }));
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    activeRoot = root;
+    activeContainer = container;
+
+    act(() => {
+      root.render(
+        <SightglassProvider controller={firstController}>
+          <Toolbar />
+        </SightglassProvider>,
+      );
+    });
+
+    expect(firstController.mount).toHaveBeenCalledTimes(1);
+    expect(firstController.destroy).toHaveBeenCalledTimes(0);
+    expect(container.textContent).toContain("Start editing");
+
+    act(() => {
+      root.render(
+        <SightglassProvider controller={secondController}>
+          <Toolbar />
+        </SightglassProvider>,
+      );
+    });
+
+    expect(firstController.destroy).toHaveBeenCalledTimes(1);
+    expect(secondController.mount).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Editing live");
+
+    act(() => {
+      root.unmount();
+    });
+
+    activeRoot = null;
+    activeContainer = null;
   });
 });

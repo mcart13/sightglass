@@ -37,20 +37,20 @@ const toReadonlyAppliedState = (
 export class MutationHistoryStore {
   private readonly commands: MutationCommandRecord[] = [];
 
-  private readonly doneIds: string[] = [];
+  private readonly doneCommands: MutationCommandRecord[] = [];
 
-  private readonly undoneIds: string[] = [];
+  private readonly undoneCommands: MutationCommandRecord[] = [];
 
   record(command: MutationCommandRecord): void {
     this.commands.push(command);
-    this.doneIds.push(command.id);
-    this.undoneIds.splice(0, this.undoneIds.length);
+    this.doneCommands.push(command);
+    this.undoneCommands.splice(0, this.undoneCommands.length);
   }
 
   undo(): boolean {
-    for (let index = this.doneIds.length - 1; index >= 0; index -= 1) {
-      const command = this.findCommand(this.doneIds[index]);
-      if (!command || !command.states.some((state) => state.status === "active")) {
+    for (let index = this.doneCommands.length - 1; index >= 0; index -= 1) {
+      const command = this.doneCommands[index];
+      if (!command.states.some((state) => state.status === "active")) {
         continue;
       }
 
@@ -60,8 +60,8 @@ export class MutationHistoryStore {
         }
       }
 
-      this.doneIds.splice(index, 1);
-      this.undoneIds.push(command.id);
+      this.doneCommands.splice(index, 1);
+      this.undoneCommands.push(command);
       return true;
     }
 
@@ -69,9 +69,9 @@ export class MutationHistoryStore {
   }
 
   redo(): boolean {
-    for (let index = this.undoneIds.length - 1; index >= 0; index -= 1) {
-      const command = this.findCommand(this.undoneIds[index]);
-      if (!command || !command.states.some((state) => state.status === "undone")) {
+    for (let index = this.undoneCommands.length - 1; index >= 0; index -= 1) {
+      const command = this.undoneCommands[index];
+      if (!command.states.some((state) => state.status === "undone")) {
         continue;
       }
 
@@ -81,8 +81,8 @@ export class MutationHistoryStore {
         }
       }
 
-      this.undoneIds.splice(index, 1);
-      this.doneIds.push(command.id);
+      this.undoneCommands.splice(index, 1);
+      this.doneCommands.push(command);
       return true;
     }
 
@@ -151,11 +151,11 @@ export class MutationHistoryStore {
       applied: Object.freeze(
         Array.from(appliedByKey.values(), (state) => toReadonlyAppliedState(state)),
       ),
-      canUndo: this.doneIds.some((commandId) =>
-        this.findCommand(commandId)?.states.some((state) => state.status === "active"),
+      canUndo: this.doneCommands.some((command) =>
+        command.states.some((state) => state.status === "active"),
       ),
-      canRedo: this.undoneIds.some((commandId) =>
-        this.findCommand(commandId)?.states.some((state) => state.status === "undone"),
+      canRedo: this.undoneCommands.some((command) =>
+        command.states.some((state) => state.status === "undone"),
       ),
     });
   }
@@ -177,9 +177,5 @@ export class MutationHistoryStore {
     }
 
     return changed;
-  }
-
-  private findCommand(commandId: string): MutationCommandRecord | undefined {
-    return this.commands.find((command) => command.id === commandId);
   }
 }

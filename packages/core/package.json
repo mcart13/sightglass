@@ -11,7 +11,7 @@
   "scripts": {
     "build": "yarn run -T tsc -p tsconfig.json",
     "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
-    "test": "yarn run -T vitest run src/types.test.ts src/selection/selection.test.ts src/mutation/mutation-engine.test.ts src/text/text-session.test.ts",
+    "test": "yarn run -T vitest run",
     "test:e2e": "yarn run -T tsc -p tsconfig.json && yarn run -T playwright test --config=playwright.config.ts --reporter=line --workers=1",
     "lint": "echo 'lint not configured for @sightglass/core yet'"
   }

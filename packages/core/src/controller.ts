@@ -58,7 +58,15 @@ const createResolveTargets = (document: Document) => {
     const targets = new Set<Element>();
 
     for (const anchor of transaction.targets) {
-      for (const match of Array.from(document.querySelectorAll(anchor.selector))) {
+      let matches: Element[];
+
+      try {
+        matches = Array.from(document.querySelectorAll(anchor.selector));
+      } catch {
+        continue;
+      }
+
+      for (const match of matches) {
         targets.add(match);
       }
     }

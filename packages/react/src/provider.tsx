@@ -59,9 +59,19 @@ export const SightglassProvider = ({
   controller,
   document,
 }: SightglassProviderProps) => {
-  const [resolvedController] = useState(() =>
-    controller ?? createSightglassController({ document: resolveDocument(document) }),
+  const ownedController = useMemo(
+    () =>
+      controller ? null : createSightglassController({ document: resolveDocument(document) }),
+    [controller, document],
   );
+  const resolvedController = controller ?? ownedController;
+
+  if (!resolvedController) {
+    throw new Error(
+      "SightglassProvider requires a controller or a document to create one.",
+    );
+  }
+
   const sessionState = useSyncExternalStore(
     resolvedController.subscribe,
     resolvedController.getSnapshot,

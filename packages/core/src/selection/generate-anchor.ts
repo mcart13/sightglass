@@ -5,14 +5,20 @@ export interface SelectionAnchor extends TargetAnchor {
   readonly alternates: readonly string[];
 }
 
-const HASHED_CLASS_PATTERN =
-  /(?:^|[_-])[A-Za-z0-9-]+__[A-Za-z0-9_-]{4,}$|__[A-Za-z0-9_-]{4,}$/;
+const HASHED_CLASS_SUFFIX_PATTERN = /^[A-Za-z0-9_-]{5,}$/;
 
-const escapeCssValue = (value: string): string =>
+const escapeAttributeValue = (value: string): string =>
   value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
 
-const isHashedClassName = (className: string): boolean =>
-  HASHED_CLASS_PATTERN.test(className);
+const isHashedClassName = (className: string): boolean => {
+  const markerIndex = className.lastIndexOf("__");
+  if (markerIndex === -1) {
+    return false;
+  }
+
+  const suffix = className.slice(markerIndex + 2);
+  return HASHED_CLASS_SUFFIX_PATTERN.test(suffix) && /\d/.test(suffix);
+};
 
 const getStableClasses = (element: Element): string[] =>
   [...element.classList].filter((className) => !isHashedClassName(className));
@@ -60,7 +66,9 @@ const buildPath = (element: Element): string => {
 
   while (current && current.tagName.toLowerCase() !== "html") {
     if (current.id) {
-      segments.unshift(`${current.tagName.toLowerCase()}#${escapeCssValue(current.id)}`);
+      segments.unshift(
+        `${current.tagName.toLowerCase()}[id="${escapeAttributeValue(current.id)}"]`,
+      );
       break;
     }
 
@@ -94,35 +102,38 @@ const buildSelectors = (element: Element, path: string): Array<{ selector: strin
 
   if (dataTestId) {
     selectors.push({
-      selector: `[data-testid="${escapeCssValue(dataTestId)}"]`,
+      selector: `[data-testid="${escapeAttributeValue(dataTestId)}"]`,
       confidence: 0.98,
     });
   }
 
   if (dataSightglassId) {
     selectors.push({
-      selector: `[data-sightglass-id="${escapeCssValue(dataSightglassId)}"]`,
+      selector: `[data-sightglass-id="${escapeAttributeValue(dataSightglassId)}"]`,
       confidence: 0.97,
     });
   }
 
   if (element.id) {
     selectors.push({
-      selector: `#${escapeCssValue(element.id)}`,
+      selector: `[id="${escapeAttributeValue(element.id)}"]`,
       confidence: 0.99,
     });
   }
 
   if (stableClasses.length > 0) {
     selectors.push({
-      selector: `${tagName}${stableClasses.map((className) => `.${escapeCssValue(className)}`).join("")}`,
+      selector: `${tagName}${stableClasses
+        .map((className) => `[class~="${escapeAttributeValue(className)}"]`)
+        .join("")}`,
       confidence: 0.86,
     });
   }
 
-  if (role) {
+  const explicitRole = element.getAttribute("role");
+  if (explicitRole && role) {
     selectors.push({
-      selector: `${tagName}[role="${escapeCssValue(role)}"]`,
+      selector: `${tagName}[role="${escapeAttributeValue(role)}"]`,
       confidence: 0.8,
     });
   }
@@ -137,9 +148,18 @@ const buildSelectors = (element: Element, path: string): Array<{ selector: strin
     confidence: 0.72,
   });
 
-  return selectors.filter(
-    (candidate, index, allCandidates) =>
-      allCandidates.findIndex((entry) => entry.selector === candidate.selector) === index,
+  const selectorsByValue = new Map<string, { selector: string; confidence: number }>();
+
+  for (const candidate of selectors) {
+    const existing = selectorsByValue.get(candidate.selector);
+    if (!existing || existing.confidence < candidate.confidence) {
+      selectorsByValue.set(candidate.selector, candidate);
+    }
+  }
+
+  return Array.from(selectorsByValue.values()).sort(
+    (left, right) =>
+      right.confidence - left.confidence || left.selector.localeCompare(right.selector),
   );
 };
 

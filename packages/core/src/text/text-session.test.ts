@@ -248,4 +248,91 @@ describe("text session", () => {
     const redoSnapshot = await redoPromise;
     expect(redoSnapshot.applied).toHaveLength(0);
   });
+
+  it("refuses to start a second edit while one is already active", () => {
+    const document = createDocument(`
+      <div data-text-target="editor">Draft <strong>copy</strong></div>
+    `);
+    const session = createTextSession({
+      engine: createMutationEngine({
+        resolveTargets: () => [],
+      }),
+      createSessionId: () => "text-session-guard",
+      now: () => "2026-03-26T20:25:00.000Z",
+    });
+    const target = document.querySelector("[data-text-target='editor']") as HTMLElement;
+
+    const firstEdit = session.startTextEdit({
+      target,
+      anchor: createAnchor("[data-text-target='editor']"),
+    });
+
+    expect(() =>
+      session.startTextEdit({
+        target,
+        anchor: createAnchor("[data-text-target='editor']"),
+      }),
+    ).toThrow(/active text edit/i);
+    expect(session.current()).toBe(firstEdit);
+  });
+
+  it("creates distinct fallback session ids even when time does not advance", () => {
+    const document = createDocument(`
+      <div data-text-target="editor">One</div>
+    `);
+    const originalCrypto = globalThis.crypto;
+    const dateNow = vi.spyOn(Date, "now").mockReturnValue(1700000000000);
+    vi.stubGlobal("crypto", undefined);
+
+    try {
+      const session = createTextSession({
+        engine: createMutationEngine({
+          resolveTargets: () => [],
+        }),
+      });
+      const target = document.querySelector("[data-text-target='editor']") as HTMLElement;
+
+      const first = session.startTextEdit({
+        target,
+        anchor: createAnchor("[data-text-target='editor']"),
+      });
+      session.cancelTextEdit();
+
+      const second = session.startTextEdit({
+        target,
+        anchor: createAnchor("[data-text-target='editor']"),
+      });
+
+      expect(first.sessionId).not.toBe(second.sessionId);
+    } finally {
+      dateNow.mockRestore();
+      vi.unstubAllGlobals();
+      vi.stubGlobal("crypto", originalCrypto);
+    }
+  });
+
+  it("allows handleKeyDown to be called without binding the session object", async () => {
+    const document = createDocument(`
+      <div data-text-target="editor">Press <strong>escape</strong></div>
+    `);
+    const session = createTextSession({
+      engine: createMutationEngine({
+        resolveTargets: () => [],
+      }),
+      createSessionId: () => "text-session-unbound",
+      now: () => "2026-03-26T20:30:00.000Z",
+    });
+    const target = document.querySelector("[data-text-target='editor']") as HTMLElement;
+    const { handleKeyDown } = session;
+
+    session.startTextEdit({
+      target,
+      anchor: createAnchor("[data-text-target='editor']"),
+    });
+    target.innerHTML = "Press <strong>escape now</strong>";
+
+    await expect(handleKeyDown({ key: "Escape" })).resolves.toBe("cancel");
+    expect(target.innerHTML).toBe("Press <strong>escape</strong>");
+    expect(session.current()).toBeNull();
+  });
 });

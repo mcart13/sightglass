@@ -305,6 +305,70 @@ describe("mutation engine", () => {
     ]);
   });
 
+  it("undos and redos commands in order even when transaction ids are reused", async () => {
+    const document = createDocument(`
+      <div data-session="shared-session" style="color: black; background-color: white;"></div>
+    `);
+    const target = document.querySelector("[data-session='shared-session']") as HTMLElement;
+    const frame = createFrameScheduler();
+    const engine = createMutationEngine({
+      resolveTargets: () => [target],
+      scheduleFrame: frame.scheduleFrame,
+    });
+
+    const applyColor = engine.apply(
+      createTransaction("shared-session", [
+        {
+          id: "op-color",
+          property: "color",
+          after: "purple",
+        },
+      ]),
+    );
+    frame.flush();
+    await applyColor;
+
+    const applyBackground = engine.apply(
+      createTransaction("shared-session", [
+        {
+          id: "op-background",
+          property: "background-color",
+          after: "orange",
+        },
+      ]),
+    );
+    frame.flush();
+    await applyBackground;
+
+    const undoLatest = engine.undo();
+    frame.flush();
+    await undoLatest;
+
+    expect(target.style.getPropertyValue("color")).toBe("purple");
+    expect(target.style.getPropertyValue("background-color")).toBe("white");
+
+    const undoEarlier = engine.undo();
+    frame.flush();
+    await undoEarlier;
+
+    expect(target.style.getPropertyValue("color")).toBe("black");
+    expect(target.style.getPropertyValue("background-color")).toBe("white");
+
+    const redoEarlier = engine.redo();
+    frame.flush();
+    await redoEarlier;
+
+    expect(target.style.getPropertyValue("color")).toBe("purple");
+    expect(target.style.getPropertyValue("background-color")).toBe("white");
+
+    const redoLatest = engine.redo();
+    frame.flush();
+    await redoLatest;
+
+    expect(target.style.getPropertyValue("color")).toBe("purple");
+    expect(target.style.getPropertyValue("background-color")).toBe("orange");
+  });
+
   it("cleans up disconnected nodes from active state and ignores them during undo", async () => {
     const document = createDocument(`
       <div data-session="session-f" style="color: black;"></div>

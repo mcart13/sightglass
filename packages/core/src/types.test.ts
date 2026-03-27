@@ -126,6 +126,34 @@ describe("session transaction guards", () => {
     expect(assertSessionTransaction(payload)).toEqual(payload);
   });
 
+  it("accepts valid ISO-8601 timestamps with timezone offsets", () => {
+    const payload = {
+      id: "txn-2b",
+      scope: "single",
+      targets: [
+        {
+          runtimeId: "node-3b",
+          selector: "#hero",
+          path: "Page/Hero",
+          role: "region",
+          classes: ["hero"],
+        },
+      ],
+      operations: [
+        {
+          id: "op-3b",
+          property: "textContent",
+          before: "Before",
+          after: "After",
+          semanticKind: "text",
+        },
+      ],
+      createdAt: "2026-03-26T18:31:00+05:30",
+    };
+
+    expect(isSessionTransaction(payload)).toBe(true);
+  });
+
   it("rejects malformed transaction payloads", () => {
     expect(
       isSessionTransaction({

@@ -61,4 +61,53 @@ describe("selection heuristics", () => {
     expect(anchor.selector).not.toContain("Card_card__abc123");
     expect(anchor.alternates.length).toBeGreaterThan(1);
   });
+
+  it("keeps stable BEM classes in the primary anchor selector", () => {
+    const document = createDocument(`
+      <div class="card__body">Stable BEM class</div>
+    `);
+    const element = document.querySelector(".card__body") as Element;
+
+    const anchor = core.generateAnchor(element);
+
+    expect(anchor.selector).toContain("card__body");
+  });
+
+  it("does not emit a role attribute selector for implicit button roles", () => {
+    const document = createDocument(`
+      <button type="button">Launch</button>
+    `);
+    const element = document.querySelector("button") as Element;
+
+    const selectors = core.generateAnchors(element).map((anchor) => anchor.selector);
+
+    expect(selectors.some((selector) => selector.includes("[role="))).toBe(false);
+  });
+
+  it("builds selectors that stay queryable when ids contain CSS special characters", () => {
+    const document = createDocument(`
+      <div id="pane:1">Escaped id target</div>
+    `);
+    const element = document.querySelector("[id='pane:1']") as Element;
+
+    const anchor = core.generateAnchor(element);
+
+    expect(() => document.querySelector(anchor.selector)).not.toThrow();
+    expect(document.querySelector(anchor.selector)).toBe(element);
+  });
+
+  it("prefers a path selector over a generic tag when no stronger anchor exists", () => {
+    const document = createDocument(`
+      <article>
+        <span>First</span>
+        <span>Second</span>
+      </article>
+    `);
+    const element = document.querySelectorAll("span")[1] as Element;
+
+    const anchor = core.generateAnchor(element);
+
+    expect(anchor.selector).toContain("article");
+    expect(anchor.selector).toContain("nth-of-type(2)");
+  });
 });

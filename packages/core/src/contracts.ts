@@ -41,13 +41,15 @@ const isOneOf = <T extends readonly string[]>(
   allowed: T,
 ): value is T[number] => isString(value) && allowed.includes(value);
 
+const ISO_TIMESTAMP_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
+
 const isIsoTimestamp = (value: unknown): value is string => {
   if (!isString(value)) {
     return false;
   }
 
-  const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
+  return ISO_TIMESTAMP_PATTERN.test(value) && Number.isFinite(Date.parse(value));
 };
 
 const freezeStringArray = (value: readonly string[]): readonly string[] =>

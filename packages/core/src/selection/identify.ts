@@ -1,5 +1,5 @@
 import {
-  findBestElement,
+  createSelectionMatch,
   resolveBestElement,
   type SelectionMatch,
   type SelectionPoint,
@@ -25,7 +25,7 @@ export const identifySelection = (
   }
 
   return Object.freeze({
-    best: findBestElement(document, point),
+    best: createSelectionMatch(bestElement, 0.92),
     similar: findSimilarElements(document, bestElement),
   });
 };
