@@ -24,6 +24,7 @@ import {
   type SightglassController,
   type SightglassSessionSnapshot,
 } from "@sightglass/core";
+import { mountCursorStyle, unmountCursorStyle } from "./cursor-style";
 
 interface OverlayState {
   readonly hoveredScope: EditScope | null;
@@ -129,6 +130,15 @@ export const SightglassProvider = ({
       resolvedController.destroy();
     };
   }, [resolvedController]);
+
+  const selectedDoc =
+    sessionState.selectedElement?.ownerDocument ?? globalThis.document;
+  useEffect(() => {
+    if (!sessionState.active) return;
+
+    mountCursorStyle(selectedDoc);
+    return () => unmountCursorStyle(selectedDoc);
+  }, [sessionState.active, selectedDoc]);
 
   const overlayState = useMemo<OverlayState>(
     () => ({
