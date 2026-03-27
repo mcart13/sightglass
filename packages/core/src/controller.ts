@@ -11,13 +11,21 @@ import {
   type MutationEngine,
   type MutationEngineSnapshot,
 } from "./mutation/mutation-engine.js";
-import type { SessionTransaction } from "./types.js";
+import {
+  createTextSession,
+  type TextSession,
+  type ActiveTextEdit,
+} from "./text/text-session.js";
+import { generateAnchor } from "./selection/generate-anchor.js";
+import { createSessionTransaction } from "./contracts.js";
+import type { EditSemanticKind, SessionTransaction } from "./types.js";
 
 export interface SightglassSessionSnapshot {
   readonly active: boolean;
   readonly selectedElement: Element | null;
   readonly selection: Readonly<SelectionResult>;
   readonly history: Readonly<MutationEngineSnapshot>;
+  readonly isEditingText: boolean;
 }
 
 export interface SightglassController {
@@ -31,6 +39,14 @@ export interface SightglassController {
   ): Promise<Readonly<MutationEngineSnapshot>>;
   undo(): Promise<Readonly<MutationEngineSnapshot>>;
   redo(): Promise<Readonly<MutationEngineSnapshot>>;
+  applyStyleToSelected(
+    property: string,
+    value: string,
+    semanticKind?: EditSemanticKind
+  ): Promise<Readonly<MutationEngineSnapshot>>;
+  startTextEdit(): void;
+  commitTextEdit(): Promise<void>;
+  cancelTextEdit(): void;
 }
 
 export interface CreateSightglassControllerOptions {
@@ -89,6 +105,7 @@ const createSnapshot = (
         canUndo: false,
         canRedo: false,
       }),
+    isEditingText: previous?.isEditingText ?? false,
     ...overrides,
   });
 
@@ -100,6 +117,8 @@ export const createSightglassController = (
     createMutationEngine({
       resolveTargets: createResolveTargets(options.document),
     });
+  const textSession = createTextSession({ engine: mutationEngine });
+  let originalContentEditable: string | null = null;
   const listeners = new Set<() => void>();
   let snapshot = createSnapshot({
     history: mutationEngine.snapshot(),
@@ -116,8 +135,22 @@ export const createSightglassController = (
     emit();
   };
 
+  const restoreContentEditable = (target: Element) => {
+    if (originalContentEditable !== null) {
+      target.setAttribute("contenteditable", originalContentEditable);
+    } else {
+      target.removeAttribute("contenteditable");
+    }
+    originalContentEditable = null;
+  };
+
   return {
     destroy() {
+      const edit = textSession.current();
+      if (edit) {
+        restoreContentEditable(edit.target);
+        textSession.cancelTextEdit();
+      }
       listeners.clear();
     },
 
@@ -137,10 +170,26 @@ export const createSightglassController = (
         return;
       }
 
+      if (!active) {
+        const edit = textSession.current();
+        if (edit) {
+          restoreContentEditable(edit.target);
+          textSession.cancelTextEdit();
+        }
+        updateSnapshot({ active, isEditingText: false });
+        return;
+      }
+
       updateSnapshot({ active });
     },
 
     inspectAtPoint(point) {
+      const edit = textSession.current();
+      if (edit) {
+        restoreContentEditable(edit.target);
+        textSession.cancelTextEdit();
+      }
+
       const selectedElement = resolveBestElement(options.document, point);
       const selection = identifySelection(
         options.document,
@@ -151,6 +200,7 @@ export const createSightglassController = (
       updateSnapshot({
         selectedElement,
         selection: toReadonlySelection(selection),
+        isEditingText: false,
       });
     },
 
@@ -168,6 +218,77 @@ export const createSightglassController = (
 
     async redo() {
       const history = await mutationEngine.redo();
+      updateSnapshot({ history });
+      return history;
+    },
+
+    startTextEdit() {
+      const el = snapshot.selectedElement;
+      if (!el || textSession.current()) return;
+      const anchor = generateAnchor(el);
+      originalContentEditable = el.getAttribute("contenteditable");
+      textSession.startTextEdit({ target: el, anchor });
+      el.setAttribute("contenteditable", "plaintext-only");
+      if (el instanceof HTMLElement) {
+        el.focus();
+      }
+      updateSnapshot({ isEditingText: true });
+    },
+
+    async commitTextEdit() {
+      const edit = textSession.current();
+      if (!edit) return;
+
+      restoreContentEditable(edit.target);
+      try {
+        const history = await textSession.commitTextEdit();
+        updateSnapshot({ isEditingText: false, history });
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          err.message.includes("No active text edit")
+        ) {
+          updateSnapshot({ isEditingText: false });
+        } else {
+          throw err;
+        }
+      }
+    },
+
+    cancelTextEdit() {
+      const edit = textSession.current();
+      if (!edit) return;
+      restoreContentEditable(edit.target);
+      textSession.cancelTextEdit();
+      updateSnapshot({ isEditingText: false });
+    },
+
+    async applyStyleToSelected(property, value, semanticKind = "css") {
+      const el = snapshot.selectedElement;
+      if (!el) return snapshot.history;
+
+      const anchor = generateAnchor(el);
+      const transaction = createSessionTransaction({
+        id: `style-${Date.now().toString(36)}-${Math.random()
+          .toString(36)
+          .slice(2, 6)}`,
+        scope: "single",
+        targets: [anchor],
+        operations: [
+          {
+            id: `op-${Date.now().toString(36)}`,
+            property,
+            before: (el.ownerDocument.defaultView ?? globalThis)
+              .getComputedStyle(el)
+              .getPropertyValue(property),
+            after: value,
+            semanticKind,
+          },
+        ],
+        createdAt: new Date().toISOString(),
+      });
+
+      const history = await mutationEngine.apply(transaction);
       updateSnapshot({ history });
       return history;
     },

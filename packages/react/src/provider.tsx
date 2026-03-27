@@ -24,10 +24,12 @@ import {
   type SightglassController,
   type SightglassSessionSnapshot,
 } from "@sightglass/core";
+import { mountCursorStyle, unmountCursorStyle } from "./cursor-style";
 
 interface OverlayState {
   readonly hoveredScope: EditScope | null;
   readonly panelOpen: boolean;
+  readonly tailwindMode: boolean;
 }
 
 interface SightglassCommands {
@@ -35,8 +37,13 @@ interface SightglassCommands {
   inspectAtPoint(point: SelectionPoint): void;
   undo(): Promise<unknown>;
   redo(): Promise<unknown>;
+  applyStyle(property: string, value: string): Promise<void>;
+  startTextEdit(): void;
+  commitTextEdit(): Promise<void>;
+  cancelTextEdit(): void;
   setHoveredScope(scope: EditScope | null): void;
   setPanelOpen(open: boolean): void;
+  setTailwindMode(enabled: boolean): void;
 }
 
 interface SightglassProviderProps extends PropsWithChildren {
@@ -111,6 +118,7 @@ export const SightglassProvider = ({
   );
   const [hoveredScope, setHoveredScope] = useState<EditScope | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [tailwindMode, setTailwindMode] = useState(false);
   const [critiquePerspective, setCritiquePerspective] =
     useState<CritiquePerspective>("emil");
   const [critiqueScope, setCritiqueScope] = useState<CritiqueScope>("node");
@@ -130,12 +138,24 @@ export const SightglassProvider = ({
     };
   }, [resolvedController]);
 
+  const selectedDoc =
+    sessionState.selectedElement?.ownerDocument ??
+    document ??
+    globalThis.document;
+  useEffect(() => {
+    if (!sessionState.active) return;
+
+    mountCursorStyle(selectedDoc);
+    return () => unmountCursorStyle(selectedDoc);
+  }, [sessionState.active, selectedDoc]);
+
   const overlayState = useMemo<OverlayState>(
     () => ({
       hoveredScope,
       panelOpen,
+      tailwindMode,
     }),
-    [hoveredScope, panelOpen]
+    [hoveredScope, panelOpen, tailwindMode]
   );
   const commands = useMemo<SightglassCommands>(
     () => ({
@@ -143,8 +163,15 @@ export const SightglassProvider = ({
       inspectAtPoint: (point) => resolvedController.inspectAtPoint(point),
       undo: () => resolvedController.undo(),
       redo: () => resolvedController.redo(),
+      applyStyle: async (property, value) => {
+        await resolvedController.applyStyleToSelected(property, value);
+      },
+      startTextEdit: () => resolvedController.startTextEdit(),
+      commitTextEdit: () => resolvedController.commitTextEdit(),
+      cancelTextEdit: () => resolvedController.cancelTextEdit(),
       setHoveredScope,
       setPanelOpen,
+      setTailwindMode,
     }),
     [resolvedController]
   );

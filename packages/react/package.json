@@ -1,7 +1,6 @@
 {
   "name": "@sightglass/react",
   "version": "0.0.0",
-  "private": false,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,13 +20,16 @@
     "@sightglass/core": "workspace:*",
     "@sightglass/critique": "workspace:*",
     "@sightglass/export": "workspace:*",
-    "@sightglass/session": "workspace:*"
+    "@sightglass/session": "workspace:*",
+    "motion": "^12.38.0"
   },
   "peerDependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
@@ -37,7 +39,7 @@
   "scripts": {
     "build": "yarn run -T tsc -p tsconfig.json",
     "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
-    "test": "yarn run -T vitest run --environment jsdom src/provider.test.tsx",
+    "test": "yarn run -T vitest run --environment jsdom src/",
     "lint": "echo 'lint not configured for @sightglass/react yet'"
   }
 }

@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo } from "react";
 import {
   analyzeSemanticContext,
   type ScopeOption,
@@ -6,7 +6,17 @@ import {
   type SightglassSessionSnapshot,
 } from "@sightglass/core";
 import type { OverlayState, SightglassCommands } from "../provider";
-import { panelSectionLabelStyle } from "./panel-styles";
+import {
+  panelButtonActiveStyle,
+  panelButtonStyle,
+  panelCardStyle,
+  panelMutedStyle,
+  panelRowLabelStyle,
+  panelRowStyle,
+  panelRowValueStyle,
+  panelSectionLabelStyle,
+  panelSectionStyle,
+} from "./panel-styles";
 
 interface SemanticInspectorProps {
   readonly commands: Pick<SightglassCommands, "setHoveredScope">;
@@ -14,57 +24,30 @@ interface SemanticInspectorProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
 }
 
-const sectionStyle: CSSProperties = {
-  display: "grid",
-  gap: 10,
-  padding: 14,
-  borderRadius: 18,
-  background: "rgba(255, 255, 255, 0.78)",
-  border: "1px solid rgba(148, 163, 184, 0.18)",
-};
-
-const mutedTextStyle: CSSProperties = {
-  margin: 0,
-  color: "#475569",
-  lineHeight: 1.5,
-};
-
-const scopeButtonStyle = (
-  active: boolean,
-): CSSProperties => ({
-  display: "grid",
-  gap: 4,
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: 16,
-  border: active
-    ? "1px solid rgba(14, 116, 144, 0.5)"
-    : "1px solid rgba(148, 163, 184, 0.22)",
-  background: active ? "rgba(224, 242, 254, 0.72)" : "rgba(255, 255, 255, 0.92)",
-  textAlign: "left",
-  cursor: "pointer",
-});
-
 const scoreResolvedCandidate = (
   candidate: Element,
-  anchor: SelectionMatch["anchors"][number],
+  anchor: SelectionMatch["anchors"][number]
 ): number => {
   const classScore = anchor.classes.reduce(
-    (score, className) => score + (candidate.classList.contains(className) ? 1 : 0),
-    0,
+    (score, className) =>
+      score + (candidate.classList.contains(className) ? 1 : 0),
+    0
   );
-  const roleScore = anchor.role && candidate.getAttribute("role") === anchor.role ? 2 : 0;
+  const roleScore =
+    anchor.role && candidate.getAttribute("role") === anchor.role ? 2 : 0;
 
   return classScore + roleScore;
 };
 
 const resolveAnchorElement = (
   selectedElement: Element,
-  anchor: SelectionMatch["anchors"][number],
+  anchor: SelectionMatch["anchors"][number]
 ): Element | null => {
   const document = selectedElement.ownerDocument;
   const selectors = Array.from(
-    new Set([anchor.selector, ...anchor.alternates, anchor.path].filter(Boolean)),
+    new Set(
+      [anchor.selector, ...anchor.alternates, anchor.path].filter(Boolean)
+    )
   );
   let bestCandidate: Element | null = null;
   let bestScore = Number.NEGATIVE_INFINITY;
@@ -72,7 +55,7 @@ const resolveAnchorElement = (
   for (const selector of selectors) {
     try {
       const matches = Array.from(document.querySelectorAll(selector)).filter(
-        (candidate) => candidate !== selectedElement,
+        (candidate) => candidate !== selectedElement
       );
 
       if (matches.length === 1) {
@@ -97,7 +80,7 @@ const resolveAnchorElement = (
 
 const resolveSimilarElements = (
   selectedElement: Element | null,
-  matches: readonly SelectionMatch[],
+  matches: readonly SelectionMatch[]
 ): readonly Element[] => {
   if (!selectedElement) {
     return Object.freeze([]);
@@ -122,25 +105,25 @@ const resolveSimilarElements = (
 const renderScopeOption = (
   option: ScopeOption,
   hoveredScope: string | null,
-  commands: Pick<SightglassCommands, "setHoveredScope">,
-) => (
-  <button
-    key={option.scope}
-    type="button"
-    data-scope-option={option.scope}
-    style={scopeButtonStyle(hoveredScope === option.scope)}
-    onFocus={() => commands.setHoveredScope(option.scope)}
-    onBlur={() => commands.setHoveredScope(null)}
-    onMouseEnter={() => commands.setHoveredScope(option.scope)}
-    onMouseLeave={() => commands.setHoveredScope(null)}
-  >
-    <strong>{option.label}</strong>
-    <span style={{ color: "#475569", fontSize: 13 }}>{option.description}</span>
-    <span style={{ color: "#64748b", fontSize: 12 }}>
-      {option.targetCount} targets · {option.reason}
-    </span>
-  </button>
-);
+  commands: Pick<SightglassCommands, "setHoveredScope">
+) => {
+  const active = hoveredScope === option.scope;
+
+  return (
+    <button
+      key={option.scope}
+      type="button"
+      data-scope-option={option.scope}
+      style={active ? panelButtonActiveStyle : panelButtonStyle}
+      onFocus={() => commands.setHoveredScope(option.scope)}
+      onBlur={() => commands.setHoveredScope(null)}
+      onMouseEnter={() => commands.setHoveredScope(option.scope)}
+      onMouseLeave={() => commands.setHoveredScope(null)}
+    >
+      {option.label} · {option.targetCount}
+    </button>
+  );
+};
 
 export const SemanticInspector = ({
   commands,
@@ -148,8 +131,12 @@ export const SemanticInspector = ({
   session,
 }: SemanticInspectorProps) => {
   const similarElements = useMemo(
-    () => resolveSimilarElements(session.selectedElement, session.selection.similar),
-    [session.selectedElement, session.selection.similar],
+    () =>
+      resolveSimilarElements(
+        session.selectedElement,
+        session.selection.similar
+      ),
+    [session.selectedElement, session.selection.similar]
   );
   const analysis = useMemo(
     () =>
@@ -159,71 +146,72 @@ export const SemanticInspector = ({
             similarElements,
           })
         : null,
-    [session.selectedElement, similarElements],
+    [session.selectedElement, similarElements]
   );
 
   if (!session.selectedElement || !analysis) {
     return (
-      <section style={sectionStyle}>
-        <span style={panelSectionLabelStyle}>Semantic controls</span>
-        <p style={mutedTextStyle}>
-          Select a live target to inspect tokens, repeated components, and safe scope
-          options.
-        </p>
-      </section>
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Tokens & Scope</span>
+        <span style={panelMutedStyle}>Select an element to inspect.</span>
+      </div>
     );
   }
 
   return (
-    <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
-      <section style={sectionStyle}>
-        <span style={panelSectionLabelStyle}>Token candidates</span>
+    <>
+      {/* Tokens */}
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Tokens</span>
         {analysis.tokens.length === 0 ? (
-          <p style={mutedTextStyle}>
-            No token-like values detected yet. Use single-instance edits for this target.
-          </p>
+          <span style={panelMutedStyle}>No tokens detected.</span>
         ) : (
-          <div style={{ display: "grid", gap: 8 }}>
-            {analysis.tokens.map((token) => (
-              <div
-                key={token.id}
-                data-token-candidate={token.id}
-                style={{ display: "grid", gap: 4 }}
-              >
-                <strong>{token.label}</strong>
-                <span style={{ color: "#475569", fontSize: 13 }}>
-                  {token.source} · {token.value}
+          analysis.tokens.map((token) => (
+            <div
+              key={token.id}
+              style={panelCardStyle}
+              data-token-candidate={token.id}
+            >
+              <div style={panelRowStyle}>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>
+                  {token.label}
                 </span>
+                <span style={panelRowValueStyle}>{token.value}</span>
               </div>
-            ))}
-          </div>
+              <span style={panelMutedStyle}>{token.source}</span>
+            </div>
+          ))
         )}
-      </section>
+      </div>
 
-      <section style={sectionStyle}>
-        <span style={panelSectionLabelStyle}>Component signature</span>
+      {/* Component */}
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Component</span>
         {analysis.component ? (
-          <div style={{ display: "grid", gap: 4 }}>
-            <strong>{analysis.component.label}</strong>
-            <span style={{ color: "#475569", fontSize: 13 }}>
-              {analysis.component.reason}
-            </span>
+          <div style={panelCardStyle}>
+            <div style={panelRowStyle}>
+              <span style={{ fontSize: 12, fontWeight: 600 }}>
+                {analysis.component.label}
+              </span>
+              <span style={panelRowValueStyle}>
+                {analysis.component.matchCount} matches
+              </span>
+            </div>
           </div>
         ) : (
-          <p style={mutedTextStyle}>
-            This selection does not yet match a repeated component signature.
-          </p>
+          <span style={panelMutedStyle}>No component match.</span>
         )}
-      </section>
+      </div>
 
-      <section style={sectionStyle}>
-        <span style={panelSectionLabelStyle}>Scope choices</span>
-        <div style={{ display: "grid", gap: 10 }}>
+      {/* Scope */}
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Scope</span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {analysis.scopes.map((option) =>
-            renderScopeOption(option, overlay.hoveredScope, commands),
+            renderScopeOption(option, overlay.hoveredScope, commands)
           )}
         </div>
-      </section>
-    </div>
+      </div>
+    </>
   );
 };

@@ -93,3 +93,9 @@ export type {
   TextSessionKeyEvent,
   TextSessionOptions,
 } from "./text/text-session.js";
+export { cssToTailwind } from "./tailwind/css-to-tailwind.js";
+export {
+  findClosestTailwindColor,
+  TAILWIND_PALETTE,
+} from "./tailwind/tailwind-colors.js";
+export type { TailwindColorMatch } from "./tailwind/tailwind-colors.js";

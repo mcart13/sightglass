@@ -1,66 +1,121 @@
-import type { CSSProperties } from "react";
-import { useSightglassOverlayState, useSightglassSessionState } from "../use-sightglass";
+// packages/react/src/components/SelectionOverlay.tsx
+import { useEffect, useState, type CSSProperties } from "react";
+import { motion, useMotionValue, useSpring } from "motion/react";
+import { useSightglassSessionState } from "../use-sightglass";
 
-const overlayStyle: CSSProperties = {
+const SELECTION_PADDING = 8;
+
+const labelBaseStyle: CSSProperties = {
   position: "fixed",
-  top: 24,
-  left: 24,
-  zIndex: 1000,
-  width: 280,
-  padding: 18,
-  borderRadius: 22,
-  background: "rgba(15, 23, 42, 0.92)",
-  color: "#f8fafc",
-  boxShadow: "0 22px 70px rgba(15, 23, 42, 0.28)",
-  fontFamily: "\"Avenir Next\", \"Segoe UI\", sans-serif",
+  zIndex: 99998,
+  padding: "2px 8px",
+  borderRadius: 4,
+  color: "#fff",
+  fontSize: 12,
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontWeight: 500,
+  whiteSpace: "nowrap",
+  pointerEvents: "none",
 };
 
-const chipStyle = (active: boolean): CSSProperties => ({
-  padding: "6px 10px",
-  borderRadius: 999,
-  border: active ? "1px solid rgba(251, 191, 36, 0.8)" : "1px solid rgba(148, 163, 184, 0.28)",
-  background: active ? "rgba(251, 191, 36, 0.18)" : "rgba(30, 41, 59, 0.9)",
-  color: active ? "#fde68a" : "#cbd5e1",
-  fontSize: 12,
-  letterSpacing: "0.06em",
-  textTransform: "uppercase",
-});
+const springConfig = { stiffness: 500, damping: 35, mass: 0.8 };
 
 export const SelectionOverlay = () => {
   const session = useSightglassSessionState();
-  const overlay = useSightglassOverlayState();
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const selectedElement = session.selectedElement;
   const primaryAnchor = session.selection.best?.anchors[0] ?? null;
-  const similarCount = session.selection.similar.length;
-  const previewScope = overlay.hoveredScope ?? "single";
+
+  // Spring-animated position/size values
+  const rawTop = useMotionValue(0);
+  const rawLeft = useMotionValue(0);
+  const rawWidth = useMotionValue(0);
+  const rawHeight = useMotionValue(0);
+
+  const springTop = useSpring(rawTop, springConfig);
+  const springLeft = useSpring(rawLeft, springConfig);
+  const springWidth = useSpring(rawWidth, springConfig);
+  const springHeight = useSpring(rawHeight, springConfig);
+
+  useEffect(() => {
+    if (!selectedElement) {
+      setRect(null);
+      return;
+    }
+
+    let frameId: number;
+    const update = () => {
+      if (!selectedElement.isConnected) {
+        setRect(null);
+        return;
+      }
+      const r = selectedElement.getBoundingClientRect();
+      setRect((prev) => {
+        if (
+          prev &&
+          prev.top === r.top &&
+          prev.left === r.left &&
+          prev.width === r.width &&
+          prev.height === r.height
+        ) {
+          return prev;
+        }
+        return r;
+      });
+      rawTop.set(r.top - SELECTION_PADDING);
+      rawLeft.set(r.left - SELECTION_PADDING);
+      rawWidth.set(r.width + SELECTION_PADDING * 2);
+      rawHeight.set(r.height + SELECTION_PADDING * 2);
+      frameId = requestAnimationFrame(update);
+    };
+    update();
+
+    return () => cancelAnimationFrame(frameId);
+  }, [selectedElement, rawTop, rawLeft, rawWidth, rawHeight]);
+
+  if (!rect || !primaryAnchor) {
+    return null;
+  }
+
+  const tag = selectedElement?.tagName.toLowerCase() ?? "";
+  const label = primaryAnchor.role ? `${tag} "${primaryAnchor.role}"` : tag;
 
   return (
-    <section aria-label="Selection scope overlay" style={overlayStyle}>
-      <div style={{ display: "grid", gap: 8 }}>
-        <span
-          style={{
-            fontSize: 12,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "#94a3b8",
-          }}
-        >
-          Scope preview
-        </span>
-        <strong style={{ fontSize: 20 }}>
-          {primaryAnchor?.selector ?? "Waiting for a target"}
-        </strong>
-        <p style={{ margin: 0, color: "#cbd5e1" }}>
-          The overlay shows how far the next semantic edit will travel before you commit it.
-        </p>
-      </div>
+    <>
+      {/* Label above selection */}
+      <motion.div
+        style={{
+          ...labelBaseStyle,
+          background: "#2563eb",
+          top: springTop,
+          left: springLeft,
+          y: -24,
+          x: 8,
+        }}
+        initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+        transition={{ type: "spring", visualDuration: 0.2, bounce: 0.1 }}
+      >
+        {label}
+      </motion.div>
 
-      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-        <span style={chipStyle(previewScope === "single")}>Single</span>
-        <span style={chipStyle(previewScope === "similar")}>
-          Similar
-          {similarCount > 0 ? ` · ${similarCount}` : ""}
-        </span>
-      </div>
-    </section>
+      {/* Selection outline */}
+      <motion.div
+        style={{
+          position: "fixed",
+          zIndex: 99998,
+          border: "2px solid #2563eb",
+          borderRadius: 4,
+          pointerEvents: "none",
+          top: springTop,
+          left: springLeft,
+          width: springWidth,
+          height: springHeight,
+        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15 }}
+      />
+    </>
   );
 };
