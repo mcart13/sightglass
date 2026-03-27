@@ -11,6 +11,10 @@ import {
 } from "../use-sightglass";
 import {
   panelCardStyle,
+  panelMutedStyle,
+  panelRowLabelStyle,
+  panelRowStyle,
+  panelRowValueStyle,
   panelSectionLabelStyle,
   panelSectionStyle,
 } from "./panel-styles";
@@ -33,94 +37,114 @@ export const MotionLab = ({ session }: MotionLabProps) => {
     });
   }, [selectedElement, target]);
   const storyboard = useMemo(
-    () => (critiqueReport ? buildMotionStoryboard(critiqueReport.context) : null),
-    [critiqueReport],
+    () =>
+      critiqueReport ? buildMotionStoryboard(critiqueReport.context) : null,
+    [critiqueReport]
   );
   const tuningSchema = useMemo(
-    () => (critiqueReport ? createMotionTuningSchema(critiqueReport.context) : null),
-    [critiqueReport],
+    () =>
+      critiqueReport ? createMotionTuningSchema(critiqueReport.context) : null,
+    [critiqueReport]
   );
 
   if (!storyboard || !tuningSchema) {
     return (
-      <section style={panelSectionStyle}>
-        <span style={panelSectionLabelStyle}>Motion lab</span>
-        <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
-          Select a live interaction to review storyboard steps, performance risks, and
-          reduced-motion-aware tuning controls.
-        </p>
-      </section>
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Motion</span>
+        <span style={panelMutedStyle}>
+          Select an element to analyze motion.
+        </span>
+      </div>
     );
   }
 
   return (
-    <section style={panelSectionStyle}>
-      <span style={panelSectionLabelStyle}>Motion lab</span>
-      <div style={{ display: "grid", gap: 8 }}>
-        <strong>{storyboard.pipelineTier === "layout-risk" ? "Layout-risk motion" : "Compositor-safe motion"}</strong>
+    <>
+      {/* Pipeline tier */}
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>
+          Pipeline
+          <span
+            style={{
+              padding: "2px 6px",
+              borderRadius: 4,
+              fontSize: 10,
+              fontWeight: 600,
+              background:
+                storyboard.pipelineTier === "layout-risk"
+                  ? "rgba(239, 68, 68, 0.15)"
+                  : "rgba(34, 197, 94, 0.15)",
+              color:
+                storyboard.pipelineTier === "layout-risk"
+                  ? "#fca5a5"
+                  : "#86efac",
+            }}
+          >
+            {storyboard.pipelineTier === "layout-risk"
+              ? "Layout risk"
+              : "Compositor"}
+          </span>
+        </span>
         {storyboard.warnings.map((warning) => (
-          <span key={warning} style={{ color: "#475569", fontSize: 13 }}>
+          <span key={warning} style={panelMutedStyle}>
             {warning}
           </span>
         ))}
       </div>
 
-      <div style={{ display: "grid", gap: 8 }}>
+      {/* Storyboard */}
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Storyboard</span>
         {storyboard.steps.map((step) => (
           <div
             key={step.id}
-            data-storyboard-step={step.id}
             style={panelCardStyle}
+            data-storyboard-step={step.id}
           >
-            <strong>{step.title}</strong>
-            <span style={{ color: "#475569", fontSize: 13 }}>
-              {step.durationMs}ms · {step.emphasis}
-            </span>
-            <span style={{ color: "#334155", fontSize: 13 }}>
-              {step.description}
-            </span>
+            <div style={panelRowStyle}>
+              <span style={{ fontSize: 12, fontWeight: 500 }}>
+                {step.title}
+              </span>
+              <span style={panelRowValueStyle}>{step.durationMs}ms</span>
+            </div>
+            <span style={panelMutedStyle}>{step.emphasis}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "grid", gap: 10 }}>
+      {/* Tuning */}
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Tuning</span>
         {tuningSchema.controls.map((control) => (
-          <label key={control.id} style={{ display: "grid", gap: 6 }}>
-            <strong>{control.label}</strong>
-            <span style={{ color: "#475569", fontSize: 13 }}>
-              {reviewDraft.motionValues[control.id] ?? control.recommendedValue}
-              {control.unit} · {control.guidance}
-            </span>
+          <label key={control.id} style={{ display: "grid", gap: 4 }}>
+            <div style={panelRowStyle}>
+              <span style={panelRowLabelStyle}>{control.label}</span>
+              <span style={panelRowValueStyle}>
+                {reviewDraft.motionValues[control.id] ??
+                  control.recommendedValue}
+                {control.unit}
+              </span>
+            </div>
             <input
               data-motion-control={control.id}
               type="range"
               min={control.min}
               max={control.max}
               step={control.step}
-              value={reviewDraft.motionValues[control.id] ?? control.recommendedValue}
+              value={
+                reviewDraft.motionValues[control.id] ?? control.recommendedValue
+              }
+              style={{ width: "100%", accentColor: "#3b82f6" }}
               onChange={(event) =>
                 reviewDraftCommands.setMotionValue(
                   control.id,
-                  Number(event.currentTarget.value),
+                  Number(event.currentTarget.value)
                 )
               }
             />
           </label>
         ))}
       </div>
-
-      <div style={{ display: "grid", gap: 6 }}>
-        {tuningSchema.performanceNotes.map((note) => (
-          <span key={note} style={{ color: "#475569", fontSize: 13 }}>
-            {note}
-          </span>
-        ))}
-        {tuningSchema.reducedMotionNotes.map((note) => (
-          <span key={note} style={{ color: "#334155", fontSize: 13 }}>
-            {note}
-          </span>
-        ))}
-      </div>
-    </section>
+    </>
   );
 };

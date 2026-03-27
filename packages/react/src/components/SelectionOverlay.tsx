@@ -1,66 +1,102 @@
-import type { CSSProperties } from "react";
-import { useSightglassOverlayState, useSightglassSessionState } from "../use-sightglass";
+import { useEffect, useState, type CSSProperties } from "react";
+import { useSightglassSessionState } from "../use-sightglass";
 
-const overlayStyle: CSSProperties = {
+const SELECTION_PADDING = 8;
+
+const hoverLabelStyle: CSSProperties = {
   position: "fixed",
-  top: 24,
-  left: 24,
-  zIndex: 1000,
-  width: 280,
-  padding: 18,
-  borderRadius: 22,
-  background: "rgba(15, 23, 42, 0.92)",
-  color: "#f8fafc",
-  boxShadow: "0 22px 70px rgba(15, 23, 42, 0.28)",
-  fontFamily: "\"Avenir Next\", \"Segoe UI\", sans-serif",
+  zIndex: 99998,
+  padding: "2px 8px",
+  borderRadius: 4,
+  background: "#3b82f6",
+  color: "#fff",
+  fontSize: 12,
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  whiteSpace: "nowrap",
+  pointerEvents: "none",
 };
 
-const chipStyle = (active: boolean): CSSProperties => ({
-  padding: "6px 10px",
-  borderRadius: 999,
-  border: active ? "1px solid rgba(251, 191, 36, 0.8)" : "1px solid rgba(148, 163, 184, 0.28)",
-  background: active ? "rgba(251, 191, 36, 0.18)" : "rgba(30, 41, 59, 0.9)",
-  color: active ? "#fde68a" : "#cbd5e1",
-  fontSize: 12,
-  letterSpacing: "0.06em",
-  textTransform: "uppercase",
-});
+const selectionLabelStyle: CSSProperties = {
+  ...hoverLabelStyle,
+  background: "#2563eb",
+  fontWeight: 500,
+};
+
+const hoverOutlineStyle: CSSProperties = {
+  position: "fixed",
+  zIndex: 99998,
+  border: "2px dashed #60a5fa",
+  background: "rgba(96, 165, 250, 0.05)",
+  borderRadius: 4,
+  pointerEvents: "none",
+  transition: "all 75ms",
+};
+
+const selectionOutlineStyle: CSSProperties = {
+  position: "fixed",
+  zIndex: 99998,
+  border: "2px solid #2563eb",
+  borderRadius: 4,
+  pointerEvents: "none",
+  transition:
+    "left 0.25s cubic-bezier(0.22, 1, 0.36, 1), top 0.25s cubic-bezier(0.22, 1, 0.36, 1), width 0.25s cubic-bezier(0.22, 1, 0.36, 1), height 0.25s cubic-bezier(0.22, 1, 0.36, 1)",
+};
 
 export const SelectionOverlay = () => {
   const session = useSightglassSessionState();
-  const overlay = useSightglassOverlayState();
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const selectedElement = session.selectedElement;
   const primaryAnchor = session.selection.best?.anchors[0] ?? null;
-  const similarCount = session.selection.similar.length;
-  const previewScope = overlay.hoveredScope ?? "single";
+
+  useEffect(() => {
+    if (!selectedElement) {
+      setRect(null);
+      return;
+    }
+
+    let frameId: number;
+    const update = () => {
+      if (!selectedElement.isConnected) {
+        setRect(null);
+        return;
+      }
+      setRect(selectedElement.getBoundingClientRect());
+      frameId = requestAnimationFrame(update);
+    };
+    update();
+
+    return () => cancelAnimationFrame(frameId);
+  }, [selectedElement]);
+
+  if (!rect || !primaryAnchor) {
+    return null;
+  }
+
+  const tag = selectedElement?.tagName.toLowerCase() ?? "";
+  const label = primaryAnchor.role ? `${tag} "${primaryAnchor.role}"` : tag;
 
   return (
-    <section aria-label="Selection scope overlay" style={overlayStyle}>
-      <div style={{ display: "grid", gap: 8 }}>
-        <span
-          style={{
-            fontSize: 12,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "#94a3b8",
-          }}
-        >
-          Scope preview
-        </span>
-        <strong style={{ fontSize: 20 }}>
-          {primaryAnchor?.selector ?? "Waiting for a target"}
-        </strong>
-        <p style={{ margin: 0, color: "#cbd5e1" }}>
-          The overlay shows how far the next semantic edit will travel before you commit it.
-        </p>
+    <>
+      {/* Label above selection */}
+      <div
+        style={{
+          ...selectionLabelStyle,
+          top: Math.max(0, rect.top - SELECTION_PADDING - 24),
+          left: rect.left - SELECTION_PADDING + 8,
+        }}
+      >
+        {label}
       </div>
-
-      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-        <span style={chipStyle(previewScope === "single")}>Single</span>
-        <span style={chipStyle(previewScope === "similar")}>
-          Similar
-          {similarCount > 0 ? ` · ${similarCount}` : ""}
-        </span>
-      </div>
-    </section>
+      {/* Selection outline with 8px padding */}
+      <div
+        style={{
+          ...selectionOutlineStyle,
+          top: rect.top - SELECTION_PADDING,
+          left: rect.left - SELECTION_PADDING,
+          width: rect.width + SELECTION_PADDING * 2,
+          height: rect.height + SELECTION_PADDING * 2,
+        }}
+      />
+    </>
   );
 };

@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo } from "react";
 import {
   buildExploreEditPlan,
   generateDesignDirections,
@@ -10,6 +10,12 @@ import {
   useSightglassReviewDraftState,
 } from "../use-sightglass";
 import {
+  panelButtonActiveStyle,
+  panelCardStyle,
+  panelMutedStyle,
+  panelRowLabelStyle,
+  panelRowStyle,
+  panelRowValueStyle,
   panelSectionLabelStyle,
   panelSectionStyle,
 } from "./panel-styles";
@@ -17,19 +23,6 @@ import {
 interface ExplorePanelProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
 }
-
-const optionStyle = (active: boolean): CSSProperties => ({
-  display: "grid",
-  gap: 6,
-  padding: 12,
-  borderRadius: 14,
-  border: active
-    ? "1px solid rgba(14, 116, 144, 0.42)"
-    : "1px solid rgba(148, 163, 184, 0.16)",
-  background: active ? "rgba(224, 242, 254, 0.82)" : "rgba(255, 255, 255, 0.9)",
-  textAlign: "left",
-  cursor: "pointer",
-});
 
 export const ExplorePanel = ({ session }: ExplorePanelProps) => {
   const reviewDraft = useSightglassReviewDraftState();
@@ -51,76 +44,95 @@ export const ExplorePanel = ({ session }: ExplorePanelProps) => {
   ]);
   const directions = useMemo(
     () => (report ? generateDesignDirections(report) : []),
-    [report],
+    [report]
   );
   const selectedDirection =
-    directions.find((direction) => direction.id === reviewDraft.selectedDirectionId) ??
+    directions.find((d) => d.id === reviewDraft.selectedDirectionId) ??
     directions[0] ??
     null;
   const editPlan = useMemo(
-    () => (report && selectedDirection ? buildExploreEditPlan(selectedDirection, report) : null),
-    [report, selectedDirection],
+    () =>
+      report && selectedDirection
+        ? buildExploreEditPlan(selectedDirection, report)
+        : null,
+    [report, selectedDirection]
   );
 
   if (!report) {
     return (
-      <section style={panelSectionStyle}>
+      <div style={panelSectionStyle}>
         <span style={panelSectionLabelStyle}>Explore</span>
-        <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
-          Critique a live target first, then explore stronger visual directions and
-          scope-aware edit plans.
-        </p>
-      </section>
+        <span style={panelMutedStyle}>Run critique first.</span>
+      </div>
     );
   }
 
   return (
-    <section style={panelSectionStyle}>
-      <span style={panelSectionLabelStyle}>Explore</span>
-      <div style={{ display: "grid", gap: 10 }}>
+    <>
+      {/* Directions */}
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>
+          Directions
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>
+            {directions.length}
+          </span>
+        </span>
         {directions.map((direction) => (
           <button
             key={direction.id}
             type="button"
             data-direction-id={direction.id}
             aria-pressed={selectedDirection?.id === direction.id}
-            style={optionStyle(selectedDirection?.id === direction.id)}
-            onClick={() => reviewDraftCommands.setSelectedDirectionId(direction.id)}
+            style={{
+              ...(selectedDirection?.id === direction.id
+                ? panelButtonActiveStyle
+                : panelCardStyle),
+              textAlign: "left",
+              cursor: "pointer",
+              width: "100%",
+            }}
+            onClick={() =>
+              reviewDraftCommands.setSelectedDirectionId(direction.id)
+            }
           >
-            <strong>{direction.title}</strong>
-            <span style={{ color: "#475569", fontSize: 13 }}>
-              {direction.visualThesis}
+            <span style={{ fontSize: 12, fontWeight: 500 }}>
+              {direction.title}
             </span>
-            <span style={{ color: "#334155", fontSize: 13 }}>
-              {direction.interactionThesis}
-            </span>
+            <span style={panelMutedStyle}>{direction.visualThesis}</span>
           </button>
         ))}
       </div>
 
-      {selectedDirection && editPlan ? (
-        <div style={{ display: "grid", gap: 8 }}>
-          <strong>{editPlan.title}</strong>
-          <span style={{ color: "#475569", fontSize: 13 }}>{editPlan.summary}</span>
-          <div style={{ display: "grid", gap: 8 }}>
-            {editPlan.proposedOperations.map((operation) => (
-              <div
-                key={operation.id}
-                data-edit-plan-operation={operation.id}
-                style={optionStyle(false)}
-              >
-                <strong>{operation.title}</strong>
-                <span style={{ color: "#475569", fontSize: 13 }}>
-                  {operation.scope} · {operation.semanticKind} · {operation.value}
-                </span>
-                <span style={{ color: "#334155", fontSize: 13 }}>
-                  {operation.rationale}
+      {/* Edit plan */}
+      {editPlan && (
+        <div style={panelSectionStyle}>
+          <span style={panelSectionLabelStyle}>
+            Edit Plan
+            <span style={{ fontVariantNumeric: "tabular-nums" }}>
+              {editPlan.proposedOperations.length}
+            </span>
+          </span>
+          {editPlan.proposedOperations.map((op) => (
+            <div
+              key={op.id}
+              style={panelCardStyle}
+              data-edit-plan-operation={op.id}
+            >
+              <div style={panelRowStyle}>
+                <span style={{ fontSize: 12, fontWeight: 500 }}>
+                  {op.title}
                 </span>
               </div>
-            ))}
-          </div>
+              <div style={panelRowStyle}>
+                <span style={panelRowLabelStyle}>{op.scope}</span>
+                <span style={panelRowValueStyle}>
+                  {op.semanticKind} · {op.value}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
-      ) : null}
-    </section>
+      )}
+    </>
   );
 };

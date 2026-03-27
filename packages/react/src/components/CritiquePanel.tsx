@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo } from "react";
 import {
   CRITIQUE_CATEGORIES,
   CRITIQUE_PERSPECTIVES,
@@ -11,37 +11,32 @@ import {
   useSightglassReviewDraftState,
 } from "../use-sightglass";
 import {
+  panelButtonActiveStyle,
+  panelButtonStyle,
   panelCardStyle,
+  panelMutedStyle,
+  panelRowLabelStyle,
+  panelRowStyle,
+  panelRowValueStyle,
   panelSectionLabelStyle,
   panelSectionStyle,
 } from "./panel-styles";
 
-const controlButtonStyle = (active: boolean): CSSProperties => ({
-  border: active
-    ? "1px solid rgba(14, 116, 144, 0.42)"
-    : "1px solid rgba(148, 163, 184, 0.22)",
-  background: active ? "rgba(224, 242, 254, 0.82)" : "rgba(255, 255, 255, 0.9)",
-  color: "#0f172a",
-  borderRadius: 999,
-  padding: "6px 10px",
-  cursor: "pointer",
-});
-
-const CATEGORY_LABELS = Object.freeze({
-  "visual-design": "Visual design",
-  "interface-design": "Interface design",
+const CATEGORY_LABELS: Record<string, string> = {
+  "visual-design": "Visual",
+  "interface-design": "Interface",
   consistency: "Consistency",
-  "user-context": "User context",
-  accessibility: "Accessibility",
-  "motion-quality": "Motion quality",
-  "motion-performance": "Motion performance",
-});
+  "user-context": "Context",
+  accessibility: "A11y",
+  "motion-quality": "Motion",
+  "motion-performance": "Perf",
+};
 
-const SCOPE_LABELS = Object.freeze({
-  node: "Selected element",
-  section: "Containing section",
-  page: "Entire page",
-});
+const SCOPE_LABELS: Record<string, string> = {
+  node: "Element",
+  section: "Section",
+  page: "Page",
+};
 
 interface CritiquePanelProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
@@ -59,120 +54,111 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
       scope: reviewDraft.critiqueScope,
       target,
     });
-  }, [reviewDraft.critiquePerspective, reviewDraft.critiqueScope, selectedElement, target]);
+  }, [
+    reviewDraft.critiquePerspective,
+    reviewDraft.critiqueScope,
+    selectedElement,
+    target,
+  ]);
 
   if (!report) {
     return (
-      <section style={panelSectionStyle}>
+      <div style={panelSectionStyle}>
         <span style={panelSectionLabelStyle}>Critique</span>
-        <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
-          Run critique on a live selection to inspect visual, accessibility, and motion
-          issues before turning them into an edit plan.
-        </p>
-      </section>
+        <span style={panelMutedStyle}>Select an element to critique.</span>
+      </div>
     );
   }
 
-  const leadFinding = report.findings[0] ?? null;
-
   return (
-    <section style={panelSectionStyle}>
-      <span style={panelSectionLabelStyle}>Critique</span>
-      <div style={{ display: "grid", gap: 8 }}>
-        <strong>Top finding</strong>
-        <div style={panelCardStyle}>
-          <strong>{leadFinding?.title ?? "No critique findings"}</strong>
-          <span style={{ color: "#475569", fontSize: 13 }}>
-            {leadFinding
-              ? `${report.context.scopeLabel} · ${CATEGORY_LABELS[leadFinding.category]}`
-              : report.context.scopeLabel}
-          </span>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gap: 8 }}>
-        <span style={panelSectionLabelStyle}>Review scope</span>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {CRITIQUE_SCOPES.map((scopeOption) => (
+    <>
+      {/* Scope + Perspective controls */}
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Scope</span>
+        <div style={{ display: "flex", gap: 4 }}>
+          {CRITIQUE_SCOPES.map((scope) => (
             <button
-              key={scopeOption}
+              key={scope}
               type="button"
-              data-critique-scope={scopeOption}
-              aria-pressed={reviewDraft.critiqueScope === scopeOption}
-              style={controlButtonStyle(reviewDraft.critiqueScope === scopeOption)}
-              onClick={() => reviewDraftCommands.setCritiqueScope(scopeOption)}
+              data-critique-scope={scope}
+              aria-pressed={reviewDraft.critiqueScope === scope}
+              style={
+                reviewDraft.critiqueScope === scope
+                  ? panelButtonActiveStyle
+                  : panelButtonStyle
+              }
+              onClick={() => reviewDraftCommands.setCritiqueScope(scope)}
             >
-              {SCOPE_LABELS[scopeOption]}
+              {SCOPE_LABELS[scope]}
             </button>
           ))}
         </div>
       </div>
 
-      <div style={{ display: "grid", gap: 8 }}>
+      <div style={panelSectionStyle}>
         <span style={panelSectionLabelStyle}>Perspective</span>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {CRITIQUE_PERSPECTIVES.map((perspectiveOption) => (
+        <div style={{ display: "flex", gap: 4 }}>
+          {CRITIQUE_PERSPECTIVES.map((perspective) => (
             <button
-              key={perspectiveOption}
+              key={perspective}
               type="button"
-              data-critique-perspective={perspectiveOption}
-              aria-pressed={reviewDraft.critiquePerspective === perspectiveOption}
-              style={controlButtonStyle(reviewDraft.critiquePerspective === perspectiveOption)}
+              data-critique-perspective={perspective}
+              aria-pressed={reviewDraft.critiquePerspective === perspective}
+              style={
+                reviewDraft.critiquePerspective === perspective
+                  ? panelButtonActiveStyle
+                  : panelButtonStyle
+              }
               onClick={() =>
-                reviewDraftCommands.setCritiquePerspective(perspectiveOption)
+                reviewDraftCommands.setCritiquePerspective(perspective)
               }
             >
-              {perspectiveOption}
+              {perspective}
             </button>
           ))}
         </div>
       </div>
 
-      {reviewDraft.selectedFindingId ? (
-        <div style={panelCardStyle}>
-          <strong>Explore handoff ready</strong>
-          <span style={{ color: "#475569", fontSize: 13 }}>
-            Selected finding: {reviewDraft.selectedFindingId}
+      {/* Summary */}
+      <div style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>
+          Findings
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>
+            {report.findings.length}
           </span>
-        </div>
-      ) : null}
+        </span>
 
-      <div style={{ display: "grid", gap: 12 }}>
-        {CRITIQUE_CATEGORIES.map((category) => {
-          const findings = report.groupedFindings[category];
-
-          if (findings.length === 0) {
-            return null;
-          }
-
-          return (
-            <div key={category} style={{ display: "grid", gap: 8 }}>
-              <strong>{CATEGORY_LABELS[category]}</strong>
-              {findings.map((finding) => (
-                <article key={finding.id} style={panelCardStyle}>
-                  <strong>{finding.title}</strong>
-                  <span style={{ color: "#475569", fontSize: 13 }}>
-                    {finding.observation}
-                  </span>
-                  <span style={{ color: "#334155", fontSize: 13 }}>
-                    {finding.recommendation}
-                  </span>
-                  <button
-                    type="button"
-                    aria-pressed={reviewDraft.selectedFindingId === finding.id}
-                    style={controlButtonStyle(reviewDraft.selectedFindingId === finding.id)}
-                    onClick={() =>
-                      reviewDraftCommands.setSelectedFindingId(finding.id)
-                    }
-                  >
-                    Turn this into an edit plan
-                  </button>
-                </article>
-              ))}
-            </div>
-          );
-        })}
+        {report.findings.length === 0 ? (
+          <span style={panelMutedStyle}>No findings.</span>
+        ) : (
+          report.findings.slice(0, 8).map((finding) => (
+            <button
+              key={finding.id}
+              type="button"
+              style={{
+                ...(reviewDraft.selectedFindingId === finding.id
+                  ? panelButtonActiveStyle
+                  : panelCardStyle),
+                textAlign: "left",
+                cursor: "pointer",
+                width: "100%",
+              }}
+              onClick={() =>
+                reviewDraftCommands.setSelectedFindingId(finding.id)
+              }
+            >
+              <div style={panelRowStyle}>
+                <span style={{ fontSize: 12, fontWeight: 500 }}>
+                  {finding.title}
+                </span>
+                <span style={{ ...panelRowValueStyle, flexShrink: 0 }}>
+                  {CATEGORY_LABELS[finding.category] ?? finding.category}
+                </span>
+              </div>
+            </button>
+          ))
+        )}
       </div>
-    </section>
+    </>
   );
 };

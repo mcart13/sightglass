@@ -14,10 +14,7 @@ import {
   generateDesignDirections,
   runScopedCritique,
 } from "@sightglass/critique";
-import {
-  createChangeManifest,
-  createReviewArtifact,
-} from "@sightglass/export";
+import { createChangeManifest, createReviewArtifact } from "@sightglass/export";
 import {
   buildChangeManifestTargets,
   buildSessionTransactionsFromHistory,
@@ -40,6 +37,7 @@ import {
 import { CardsFixture } from "./fixtures/cards";
 import { ContentEdgeCasesFixture } from "./fixtures/content-edge-cases";
 import { FormsFixture } from "./fixtures/forms";
+import { LandingPageFixture } from "./fixtures/landing-page";
 import { MotionFixture } from "./fixtures/motion";
 import { TokensFixture, playgroundStyles } from "./fixtures/tokens";
 import {
@@ -88,7 +86,7 @@ const outputStyle: CSSProperties = {
   border: "1px solid rgba(54, 36, 20, 0.12)",
   background: "rgba(255, 255, 255, 0.78)",
   color: "var(--sg-ink-strong)",
-  fontFamily: "\"SFMono-Regular\", Consolas, monospace",
+  fontFamily: '"SFMono-Regular", Consolas, monospace',
   fontSize: 13,
   lineHeight: 1.55,
 };
@@ -108,12 +106,12 @@ const statusChipStyle = (active: boolean): CSSProperties => ({
 });
 
 const resolveSelectedAnchor = (
-  session: Readonly<SightglassSessionSnapshot>,
+  session: Readonly<SightglassSessionSnapshot>
 ): SelectionAnchor | null => session.selection.best?.anchors[0] ?? null;
 
 const readOperationBefore = (
   session: Readonly<SightglassSessionSnapshot>,
-  property: string,
+  property: string
 ): string => {
   const selectedElement = session.selectedElement;
 
@@ -126,13 +124,15 @@ const readOperationBefore = (
   }
 
   const computedStyle =
-    selectedElement.ownerDocument.defaultView?.getComputedStyle(selectedElement);
+    selectedElement.ownerDocument.defaultView?.getComputedStyle(
+      selectedElement
+    );
   return computedStyle?.getPropertyValue(property).trim() ?? "";
 };
 
 const inspectAnchor = (
   controller: SightglassController,
-  selector: string | null,
+  selector: string | null
 ): void => {
   if (!selector) {
     return;
@@ -156,7 +156,7 @@ const inspectAnchor = (
 };
 
 const resetControllerHistory = async (
-  controller: SightglassController,
+  controller: SightglassController
 ): Promise<void> => {
   while (controller.getSnapshot().history.canUndo) {
     await controller.undo();
@@ -181,7 +181,9 @@ const SelectionBridge = () => {
         return;
       }
 
-      const selectable = event.target.closest("[data-sightglass-selectable='true']");
+      const selectable = event.target.closest(
+        "[data-sightglass-selectable='true']"
+      );
 
       if (!selectable) {
         return;
@@ -216,7 +218,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
   const reviewDraftCommands = useSightglassReviewDraftCommands();
   const [store, setStore] = useState<SessionStore | null>(null);
   const [statusText, setStatusText] = useState(
-    "Use the real packages to edit fixtures, export a manifest, and restore a local review session.",
+    "Use the real packages to edit fixtures, export a manifest, and restore a local review session."
   );
   const [manifestText, setManifestText] = useState("");
   const selectedAnchor = resolveSelectedAnchor(session);
@@ -234,20 +236,27 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
     session.selectedElement,
   ]);
   const directions = useMemo(
-    () => (critiqueReport ? generateDesignDirections(critiqueReport) : Object.freeze([])),
-    [critiqueReport],
+    () =>
+      critiqueReport
+        ? generateDesignDirections(critiqueReport)
+        : Object.freeze([]),
+    [critiqueReport]
   );
   const activeDirection =
-    directions.find((direction) => direction.id === reviewDraft.selectedDirectionId) ??
+    directions.find(
+      (direction) => direction.id === reviewDraft.selectedDirectionId
+    ) ??
     directions[0] ??
     null;
   const motionStoryboard = useMemo(
-    () => (critiqueReport ? buildMotionStoryboard(critiqueReport.context) : null),
-    [critiqueReport],
+    () =>
+      critiqueReport ? buildMotionStoryboard(critiqueReport.context) : null,
+    [critiqueReport]
   );
   const motionTuningSchema = useMemo(
-    () => (critiqueReport ? createMotionTuningSchema(critiqueReport.context) : null),
-    [critiqueReport],
+    () =>
+      critiqueReport ? createMotionTuningSchema(critiqueReport.context) : null,
+    [critiqueReport]
   );
   const latestManifest = useMemo(() => {
     if (!selectedAnchor || !critiqueReport || !motionStoryboard) {
@@ -257,7 +266,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
     const createdAt = new Date().toISOString();
     const transactions = buildSessionTransactionsFromHistory(
       session.history,
-      createdAt,
+      createdAt
     );
 
     return createChangeManifest({
@@ -266,7 +275,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
       targets: buildChangeManifestTargets(
         transactions,
         selectedAnchor,
-        "Current playground target",
+        "Current playground target"
       ),
       transactions,
       critique: critiqueReport.findings,
@@ -276,8 +285,10 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
               {
                 directionId: activeDirection.id,
                 title: activeDirection.title,
-                proposedOperations:
-                  buildExploreEditPlan(activeDirection, critiqueReport).proposedOperations,
+                proposedOperations: buildExploreEditPlan(
+                  activeDirection,
+                  critiqueReport
+                ).proposedOperations,
               },
             ]
           : [],
@@ -291,7 +302,12 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
     session,
   ]);
   const latestRecord = useMemo(() => {
-    if (!latestManifest || !critiqueReport || !motionStoryboard || !motionTuningSchema) {
+    if (
+      !latestManifest ||
+      !critiqueReport ||
+      !motionStoryboard ||
+      !motionTuningSchema
+    ) {
       return null;
     }
 
@@ -343,7 +359,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
     after: string,
     semanticKind: "css" | "token",
     scope: "single" | "token",
-    label: string,
+    label: string
   ) => {
     if (!selectedAnchor) {
       setStatusText("Select a fixture target first.");
@@ -366,7 +382,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
             }),
           ],
           createdAt: new Date().toISOString(),
-        }),
+        })
       );
 
       setStatusText(label);
@@ -377,13 +393,15 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
 
   const handleExportManifest = () => {
     if (!latestManifest) {
-      setStatusText("Inspect a fixture and make at least one edit before exporting a manifest.");
+      setStatusText(
+        "Inspect a fixture and make at least one edit before exporting a manifest."
+      );
       return;
     }
 
     setManifestText(JSON.stringify(latestManifest, null, 2));
     setStatusText(
-      `Exported ${latestManifest.transactions.length} transaction bundle as machine-readable JSON.`,
+      `Exported ${latestManifest.transactions.length} transaction bundle as machine-readable JSON.`
     );
   };
 
@@ -422,7 +440,10 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
       }
 
       reviewDraftCommands.hydrateReviewDraft(latest.reviewDraft);
-      inspectAnchor(controller, latest.manifest.targets[0]?.anchor.selector ?? null);
+      inspectAnchor(
+        controller,
+        latest.manifest.targets[0]?.anchor.selector ?? null
+      );
       setManifestText(JSON.stringify(latest.manifest, null, 2));
       setStatusText(`Restored ${latest.name} from local session storage.`);
     } catch {
@@ -450,12 +471,16 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
             critiqueSummary: latestRecord.reviewArtifact.critiqueSummary,
             exploration: latestRecord.reviewArtifact.exploration,
             prompt: latestRecord.reviewArtifact.prompt,
-          }),
+          })
         )
       : "Select a fixture, run critique, and export a review route summary.";
 
   return (
-    <section className="surface-panel" data-sightglass-chrome="true" style={liveHarnessStyle}>
+    <section
+      className="surface-panel"
+      data-sightglass-chrome="true"
+      style={liveHarnessStyle}
+    >
       <span className="section-kicker">Dogfood harness</span>
       <div className="hero-columns">
         <div style={workbenchStyle}>
@@ -463,12 +488,15 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
             {session.active ? "Live inspection armed" : "Inspection paused"}
           </span>
           <strong style={{ fontSize: 30, lineHeight: 1.1 }}>
-            Edit the real fixture surface, export the manifest, and restore a saved review.
+            Edit the real fixture surface, export the manifest, and restore a
+            saved review.
           </strong>
-          <p style={{ margin: 0, color: "var(--sg-ink-muted)", lineHeight: 1.6 }}>
-            The shared overlay handles selection, critique, explore mode, motion notes,
-            and session review. This harness adds deterministic edit and restore controls so
-            the release surface can be dogfooded every time.
+          <p
+            style={{ margin: 0, color: "var(--sg-ink-muted)", lineHeight: 1.6 }}
+          >
+            The shared overlay handles selection, critique, explore mode, motion
+            notes, and session review. This harness adds deterministic edit and
+            restore controls so the release surface can be dogfooded every time.
           </p>
 
           <div style={buttonRowStyle}>
@@ -482,7 +510,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
                   "rgba(255, 238, 213, 0.96)",
                   "css",
                   "single",
-                  "Applied a direct surface polish edit to the selected target.",
+                  "Applied a direct surface polish edit to the selected target."
                 )
               }
             >
@@ -498,7 +526,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
                   "var(--sg-radius-xl)",
                   "token",
                   "token",
-                  "Applied a token-like radius edit to the selected target.",
+                  "Applied a token-like radius edit to the selected target."
                 )
               }
             >
@@ -553,7 +581,9 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
                 data-testid="playground-perspective-jakub"
                 type="button"
                 style={buttonStyle}
-                onClick={() => reviewDraftCommands.setCritiquePerspective("jakub")}
+                onClick={() =>
+                  reviewDraftCommands.setCritiquePerspective("jakub")
+                }
               >
                 Switch to jakub
               </button>
@@ -575,7 +605,8 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
               data-testid="playground-top-finding"
               style={{ color: "var(--sg-ink-muted)" }}
             >
-              {critiqueReport?.findings[0]?.title ?? "No critique findings yet."}
+              {critiqueReport?.findings[0]?.title ??
+                "No critique findings yet."}
             </span>
             <span
               data-testid="playground-top-direction"
@@ -597,7 +628,8 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
             <div className="metric-card rounded-lg">
               <span className="section-kicker">Selected target</span>
               <strong data-testid="playground-selected-target">
-                {selectedAnchor?.selector ?? "Click a fixture while editing is active"}
+                {selectedAnchor?.selector ??
+                  "Click a fixture while editing is active"}
               </strong>
             </div>
             <div className="metric-card rounded-lg">
@@ -616,7 +648,10 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
         </div>
       </div>
 
-      <span data-testid="playground-status" style={{ color: "var(--sg-ink-muted)" }}>
+      <span
+        data-testid="playground-status"
+        style={{ color: "var(--sg-ink-muted)" }}
+      >
         {statusText}
       </span>
 
@@ -633,7 +668,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
 export const App = () => {
   const controller = useMemo(
     () => createSightglassController({ document }),
-    [],
+    []
   );
 
   useEffect(() => {
@@ -658,12 +693,21 @@ export const App = () => {
                 Live editing · critique · exploration · session review
               </span>
               <h1 className="section-title">
-                Keep live editing, design-system scope, critique, and motion tuning on the surface itself.
+                Keep live editing, design-system scope, critique, and motion
+                tuning on the surface itself.
               </h1>
-              <p style={{ margin: 0, color: "var(--sg-ink-muted)", lineHeight: 1.7, fontSize: 18 }}>
-                This playground is intentionally busy: repeated cards, token-backed styles,
-                peer actions, motion traps, empty states, and long-form content all live together so
-                the real packages can be exercised before every release.
+              <p
+                style={{
+                  margin: 0,
+                  color: "var(--sg-ink-muted)",
+                  lineHeight: 1.7,
+                  fontSize: 18,
+                }}
+              >
+                This playground is intentionally busy: repeated cards,
+                token-backed styles, peer actions, motion traps, empty states,
+                and long-form content all live together so the real packages can
+                be exercised before every release.
               </p>
             </div>
 
@@ -677,13 +721,15 @@ export const App = () => {
                 Sightglass is not a side-canvas tool and not a prompt toy.
               </strong>
               <span style={{ color: "var(--sg-ink-muted)", lineHeight: 1.6 }}>
-                It edits the real interface, stays aware of design-system boundaries, critiques the live result,
-                explores stronger directions, and stores review-ready artifacts locally.
+                It edits the real interface, stays aware of design-system
+                boundaries, critiques the live result, explores stronger
+                directions, and stores review-ready artifacts locally.
               </span>
             </div>
           </div>
         </section>
 
+        <LandingPageFixture />
         <LiveHarness controller={controller} />
         <TokensFixture />
         <CardsFixture />
