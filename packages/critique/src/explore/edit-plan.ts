@@ -69,8 +69,12 @@ export const buildExploreEditPlan = (
 ): Readonly<ExploreEditPlan> => {
   const operations = report.findings
     .filter((finding) => direction.findingIds.includes(finding.id))
-    .map((finding) => {
+    .flatMap((finding) => {
       const template = CATEGORY_TO_OPERATION[finding.category];
+
+      if (!template) {
+        return [];
+      }
 
       return createOperation({
         id: `plan:${direction.id}:${finding.id}`,

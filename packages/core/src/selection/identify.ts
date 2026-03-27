@@ -16,7 +16,10 @@ export const identifySelection = (
   point: SelectionPoint,
   preResolved?: Element | null
 ): SelectionResult => {
-  const bestElement = preResolved ?? resolveBestElement(document, point);
+  const bestElement =
+    preResolved !== undefined
+      ? preResolved
+      : resolveBestElement(document, point);
 
   if (!bestElement) {
     return Object.freeze({

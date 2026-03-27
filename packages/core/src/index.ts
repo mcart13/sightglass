@@ -38,6 +38,9 @@ export {
 } from "./selection/find-best-element.js";
 export { findSimilarElements } from "./selection/find-similar-elements.js";
 export { identifySelection } from "./selection/identify.js";
+
+/** @deprecated Use `identifySelection(document, point).best` instead. */
+export { findBestElement } from "./selection/find-best-element.js";
 export {
   analyzeSemanticContext,
   resolveScopeOptions,

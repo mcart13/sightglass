@@ -194,9 +194,9 @@ export const createIndexedDbSessionStore = async (
       return JSON.stringify(record, null, 2);
     },
     async importSession(payload) {
-      const record = cloneRecord(parseSessionPayload(payload));
+      const record = parseSessionPayload(payload);
       await adapter.put(record);
-      return record;
+      return cloneRecord(record);
     },
   };
 };

@@ -44,3 +44,12 @@ export const createSelectionMatch = (
     confidence,
     anchors: generateAnchors(element),
   });
+
+/** @deprecated Use `identifySelection(document, point).best` instead. */
+export const findBestElement = (
+  document: Document,
+  point: SelectionPoint
+): SelectionMatch | null => {
+  const bestElement = resolveBestElement(document, point);
+  return bestElement ? createSelectionMatch(bestElement, 0.92) : null;
+};
