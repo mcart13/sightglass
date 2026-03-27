@@ -8,13 +8,17 @@
   ],
   "scripts": {
     "build": "yarn workspaces foreach -Wpt run build",
+    "changeset": "changeset",
     "typecheck": "yarn workspaces foreach -Wpt run typecheck",
     "test": "yarn workspaces foreach -Wpt run test",
     "lint": "yarn workspaces foreach -Wpt run lint",
     "dev:playground": "yarn workspace @sightglass/playground dev",
-    "dev:site": "yarn workspace @sightglass/site dev"
+    "dev:site": "yarn workspace @sightglass/site dev",
+    "version:packages": "changeset version",
+    "release:packages": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.7",
     "@playwright/test": "^1.55.0",
     "jsdom": "^26.1.0",
     "typescript": "^5.9.3",
