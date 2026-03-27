@@ -238,7 +238,7 @@ export const EditorPanel = () => {
   return (
     <div data-sightglass-chrome="true">
       <InlineTextEditor />
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {!overlay.panelOpen ? (
           <motion.button
             key="collapsed"

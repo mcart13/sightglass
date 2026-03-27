@@ -68,8 +68,22 @@ const toReadonlySelection = (
     similar: Object.freeze([...selection.similar]),
   });
 
-const createResolveTargets = (document: Document) => {
+const createResolveTargets = (
+  document: Document,
+  directTargets: Map<string, Element>
+) => {
   return (transaction: Readonly<SessionTransaction>): readonly Element[] => {
+    // If a direct element reference was stashed for this transaction, use it
+    // instead of querying by selector. This avoids failures when the generated
+    // anchor selector doesn't round-trip back to the original element (e.g.
+    // elements found via elementFromPoint that lack stable identifiers).
+    const direct = directTargets.get(transaction.id);
+    if (direct?.isConnected) {
+      directTargets.delete(transaction.id);
+      return [direct];
+    }
+    directTargets.delete(transaction.id);
+
     const targets = new Set<Element>();
 
     for (const anchor of transaction.targets) {
@@ -112,10 +126,11 @@ const createSnapshot = (
 export const createSightglassController = (
   options: CreateSightglassControllerOptions
 ): SightglassController => {
+  const directTargets = new Map<string, Element>();
   const mutationEngine =
     options.mutationEngine ??
     createMutationEngine({
-      resolveTargets: createResolveTargets(options.document),
+      resolveTargets: createResolveTargets(options.document, directTargets),
     });
   const textSession = createTextSession({ engine: mutationEngine });
   let originalContentEditable: string | null = null;
@@ -268,10 +283,11 @@ export const createSightglassController = (
       if (!el) return snapshot.history;
 
       const anchor = generateAnchor(el);
+      const transactionId = `style-${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 6)}`;
       const transaction = createSessionTransaction({
-        id: `style-${Date.now().toString(36)}-${Math.random()
-          .toString(36)
-          .slice(2, 6)}`,
+        id: transactionId,
         scope: "single",
         targets: [anchor],
         operations: [
@@ -287,6 +303,10 @@ export const createSightglassController = (
         ],
         createdAt: new Date().toISOString(),
       });
+
+      // Stash the direct element reference so resolveTargets can use it
+      // instead of re-querying by selector (which may not match).
+      directTargets.set(transactionId, el);
 
       const history = await mutationEngine.apply(transaction);
       updateSnapshot({ history });

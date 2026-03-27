@@ -117,7 +117,9 @@ export const SightglassProvider = ({
     getSnapshot
   );
   const [hoveredScope, setHoveredScope] = useState<EditScope | null>(null);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(
+    () => resolvedController.getSnapshot().active
+  );
   const [tailwindMode, setTailwindMode] = useState(false);
   const [critiquePerspective, setCritiquePerspective] =
     useState<CritiquePerspective>("emil");
@@ -159,7 +161,10 @@ export const SightglassProvider = ({
   );
   const commands = useMemo<SightglassCommands>(
     () => ({
-      setActive: (active) => resolvedController.setActive(active),
+      setActive: (active) => {
+        resolvedController.setActive(active);
+        setPanelOpen(active);
+      },
       inspectAtPoint: (point) => resolvedController.inspectAtPoint(point),
       undo: () => resolvedController.undo(),
       redo: () => resolvedController.redo(),
