@@ -1,4 +1,10 @@
-import { useState, useCallback, useRef, type CSSProperties } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type CSSProperties,
+} from "react";
 
 export interface SliderStop {
   readonly value: number;
@@ -87,10 +93,7 @@ export function Slider({
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
-      const target = e.target as HTMLElement;
-      if (typeof target.setPointerCapture === "function") {
-        target.setPointerCapture(e.pointerId);
-      }
+      e.stopPropagation();
       setDragging(true);
       const next = valueFromClientX(e.clientX);
       if (next !== value) onChange(next);
@@ -98,18 +101,29 @@ export function Slider({
     [valueFromClientX, onChange, value]
   );
 
-  const onPointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!dragging) return;
-      const next = valueFromClientX(e.clientX);
-      if (next !== value) onChange(next);
-    },
-    [dragging, valueFromClientX, onChange, value]
-  );
+  // Use document-level listeners for drag. setPointerCapture redirects
+  // events to the captured element, which breaks React's synthetic
+  // onPointerMove on the parent track div when the user clicks a child
+  // (fill bar or handle). Document listeners always fire.
+  useEffect(() => {
+    if (!dragging) return;
 
-  const onPointerUp = useCallback(() => {
-    setDragging(false);
-  }, []);
+    const handleMove = (e: PointerEvent) => {
+      const next = valueFromClientX(e.clientX);
+      onChange(next);
+    };
+
+    const handleUp = () => {
+      setDragging(false);
+    };
+
+    document.addEventListener("pointermove", handleMove);
+    document.addEventListener("pointerup", handleUp);
+    return () => {
+      document.removeEventListener("pointermove", handleMove);
+      document.removeEventListener("pointerup", handleUp);
+    };
+  }, [dragging, valueFromClientX, onChange]);
 
   const displayValue = formatValue ? formatValue(value) : `${value}${suffix}`;
 
@@ -217,8 +231,6 @@ export function Slider({
         onPointerEnter={() => setHovered(true)}
         onPointerLeave={() => setHovered(false)}
         onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
       >
         <div style={fillStyle} />
         <div style={handleStyle} />

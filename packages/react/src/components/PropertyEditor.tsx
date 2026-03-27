@@ -160,9 +160,48 @@ export function PropertyEditor({ session, commands }: PropertyEditorProps) {
   }
 
   const isFlex = computed.display.includes("flex");
+  const hasText = element.textContent?.trim().length ?? 0 > 0;
 
   return (
     <>
+      {/* Content - text editing */}
+      {hasText && (
+        <div style={panelSectionStyle}>
+          <span style={panelSectionLabelStyle}>Content</span>
+          {session.isEditingText ? (
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                type="button"
+                style={{
+                  ...panelButtonStyle,
+                  flex: 1,
+                  background: "#2563eb",
+                  color: "#fff",
+                }}
+                onClick={() => commands.commitTextEdit()}
+              >
+                Done
+              </button>
+              <button
+                type="button"
+                style={{ ...panelButtonStyle, flex: 1 }}
+                onClick={() => commands.cancelTextEdit()}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              style={panelButtonStyle}
+              onClick={() => commands.startTextEdit()}
+            >
+              Edit text
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Background */}
       <div style={panelSectionStyle}>
         <span style={panelSectionLabelStyle}>Background</span>
