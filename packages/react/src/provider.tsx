@@ -44,24 +44,23 @@ interface SightglassProviderProps extends PropsWithChildren {
   readonly document?: Document;
 }
 
-type ReviewDraftState = ReviewDraftSnapshot;
-
 interface ReviewDraftCommands {
   setCritiquePerspective(perspective: CritiquePerspective): void;
   setCritiqueScope(scope: CritiqueScope): void;
   setSelectedFindingId(findingId: string | null): void;
   setSelectedDirectionId(directionId: string | null): void;
   setMotionValue(controlId: MotionTuningControlId, value: number): void;
-  hydrateReviewDraft(draft: Partial<ReviewDraftState>): void;
+  hydrateReviewDraft(draft: Partial<ReviewDraftSnapshot>): void;
 }
 
-const SessionStateContext = createContext<Readonly<SightglassSessionSnapshot> | null>(
-  null,
-);
+const SessionStateContext =
+  createContext<Readonly<SightglassSessionSnapshot> | null>(null);
 const OverlayStateContext = createContext<OverlayState | null>(null);
 const CommandsContext = createContext<SightglassCommands | null>(null);
-const ReviewDraftStateContext = createContext<ReviewDraftState | null>(null);
-const ReviewDraftCommandsContext = createContext<ReviewDraftCommands | null>(null);
+const ReviewDraftStateContext = createContext<ReviewDraftSnapshot | null>(null);
+const ReviewDraftCommandsContext = createContext<ReviewDraftCommands | null>(
+  null
+);
 
 const resolveDocument = (documentOverride?: Document): Document => {
   if (documentOverride) {
@@ -73,7 +72,7 @@ const resolveDocument = (documentOverride?: Document): Document => {
   }
 
   throw new Error(
-    "SightglassProvider requires a document when no controller is provided.",
+    "SightglassProvider requires a document when no controller is provided."
   );
 };
 
@@ -84,43 +83,48 @@ export const SightglassProvider = ({
 }: SightglassProviderProps) => {
   const ownedController = useMemo(
     () =>
-      controller ? null : createSightglassController({ document: resolveDocument(document) }),
-    [controller, document],
+      controller
+        ? null
+        : createSightglassController({ document: resolveDocument(document) }),
+    [controller, document]
   );
   const resolvedController = controller ?? ownedController;
 
   if (!resolvedController) {
     throw new Error(
-      "SightglassProvider requires a controller or a document to create one.",
+      "SightglassProvider requires a controller or a document to create one."
     );
   }
 
   const subscribe = useCallback(
     (listener: () => void) => resolvedController.subscribe(listener),
-    [resolvedController],
+    [resolvedController]
   );
   const getSnapshot = useCallback(
     () => resolvedController.getSnapshot(),
-    [resolvedController],
+    [resolvedController]
   );
   const sessionState = useSyncExternalStore(
     subscribe,
     getSnapshot,
-    getSnapshot,
+    getSnapshot
   );
   const [hoveredScope, setHoveredScope] = useState<EditScope | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
   const [critiquePerspective, setCritiquePerspective] =
     useState<CritiquePerspective>("emil");
   const [critiqueScope, setCritiqueScope] = useState<CritiqueScope>("node");
-  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
-  const [selectedDirectionId, setSelectedDirectionId] = useState<string | null>(null);
+  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(
+    null
+  );
+  const [selectedDirectionId, setSelectedDirectionId] = useState<string | null>(
+    null
+  );
   const [motionValues, setMotionValues] = useState<
     Partial<Record<MotionTuningControlId, number>>
   >({});
 
   useEffect(() => {
-    resolvedController.mount();
     return () => {
       resolvedController.destroy();
     };
@@ -131,7 +135,7 @@ export const SightglassProvider = ({
       hoveredScope,
       panelOpen,
     }),
-    [hoveredScope, panelOpen],
+    [hoveredScope, panelOpen]
   );
   const commands = useMemo<SightglassCommands>(
     () => ({
@@ -142,9 +146,9 @@ export const SightglassProvider = ({
       setHoveredScope,
       setPanelOpen,
     }),
-    [resolvedController],
+    [resolvedController]
   );
-  const reviewDraftState = useMemo<ReviewDraftState>(
+  const reviewDraftState = useMemo<ReviewDraftSnapshot>(
     () =>
       createReviewDraftSnapshot({
         critiquePerspective,
@@ -159,7 +163,7 @@ export const SightglassProvider = ({
       selectedFindingId,
       selectedDirectionId,
       motionValues,
-    ],
+    ]
   );
   const reviewDraftCommands = useMemo<ReviewDraftCommands>(
     () => ({
@@ -194,7 +198,7 @@ export const SightglassProvider = ({
         }
       },
     }),
-    [],
+    []
   );
 
   return (
@@ -229,22 +233,21 @@ export const useOverlayStateContext = (): OverlayState =>
 export const useCommandsContext = (): SightglassCommands =>
   readRequiredContext(useContext(CommandsContext), "Commands context");
 
-export const useReviewDraftStateContext = (): ReviewDraftState =>
+export const useReviewDraftStateContext = (): ReviewDraftSnapshot =>
   readRequiredContext(
     useContext(ReviewDraftStateContext),
-    "Review draft state context",
+    "Review draft state context"
   );
 
 export const useReviewDraftCommandsContext = (): ReviewDraftCommands =>
   readRequiredContext(
     useContext(ReviewDraftCommandsContext),
-    "Review draft commands context",
+    "Review draft commands context"
   );
 
 export type {
   OverlayState,
   ReviewDraftCommands,
-  ReviewDraftState,
   SightglassCommands,
   SightglassProviderProps,
 };

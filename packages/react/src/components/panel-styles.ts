@@ -16,6 +16,15 @@ export const panelSectionLabelStyle: CSSProperties = {
   color: "#64748b",
 };
 
+export const panelButtonStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.22)",
+  background: "rgba(255, 255, 255, 0.9)",
+  color: "#0f172a",
+  borderRadius: 999,
+  padding: "6px 10px",
+  cursor: "pointer",
+};
+
 export const panelCardStyle: CSSProperties = {
   display: "grid",
   gap: 6,

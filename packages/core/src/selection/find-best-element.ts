@@ -10,7 +10,7 @@ export interface SelectionMatch {
   readonly anchors: readonly SelectionAnchor[];
 }
 
-const INTERACTIVE_SELECTOR = [
+export const INTERACTIVE_SELECTOR = [
   "button",
   "a[href]",
   "input",
@@ -25,7 +25,7 @@ const resolveInteractiveAncestor = (element: Element): Element =>
 
 export const resolveBestElement = (
   document: Document,
-  point: SelectionPoint,
+  point: SelectionPoint
 ): Element | null => {
   const hit = document.elementFromPoint(point.x, point.y);
 
@@ -38,22 +38,18 @@ export const resolveBestElement = (
 
 export const createSelectionMatch = (
   element: Element,
-  confidence: number,
+  confidence: number
 ): SelectionMatch =>
   Object.freeze({
     confidence,
     anchors: generateAnchors(element),
   });
 
+/** @deprecated Use `identifySelection(document, point).best` instead. */
 export const findBestElement = (
   document: Document,
-  point: SelectionPoint,
+  point: SelectionPoint
 ): SelectionMatch | null => {
   const bestElement = resolveBestElement(document, point);
-
-  if (!bestElement) {
-    return null;
-  }
-
-  return createSelectionMatch(bestElement, 0.92);
+  return bestElement ? createSelectionMatch(bestElement, 0.92) : null;
 };

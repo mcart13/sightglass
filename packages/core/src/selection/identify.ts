@@ -14,8 +14,12 @@ export interface SelectionResult {
 export const identifySelection = (
   document: Document,
   point: SelectionPoint,
+  preResolved?: Element | null
 ): SelectionResult => {
-  const bestElement = resolveBestElement(document, point);
+  const bestElement =
+    preResolved !== undefined
+      ? preResolved
+      : resolveBestElement(document, point);
 
   if (!bestElement) {
     return Object.freeze({

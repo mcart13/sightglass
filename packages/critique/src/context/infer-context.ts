@@ -1,4 +1,9 @@
-import type { CritiqueContext, CritiqueScope, MotionSignals } from "../contracts.js";
+import { INTERACTIVE_SELECTOR } from "@sightglass/core";
+import type {
+  CritiqueContext,
+  CritiqueScope,
+  MotionSignals,
+} from "../contracts.js";
 
 const SECTION_SELECTOR = [
   "section",
@@ -9,16 +14,6 @@ const SECTION_SELECTOR = [
   "header",
   "footer",
   "nav",
-].join(",");
-
-const INTERACTIVE_SELECTOR = [
-  "button",
-  "a[href]",
-  "input",
-  "select",
-  "textarea",
-  "[role='button']",
-  "[role='link']",
 ].join(",");
 
 const LAYOUT_AFFECTING_PROPERTIES = new Set([
@@ -34,7 +29,7 @@ const LAYOUT_AFFECTING_PROPERTIES = new Set([
 export const resolveCritiqueScopeElement = (
   document: Document,
   selectedElement: Element,
-  scope: CritiqueScope,
+  scope: CritiqueScope
 ): Element => {
   if (scope === "page") {
     return document.body;
@@ -100,13 +95,13 @@ const readTransitionDuration = (element: Element): number => {
 
   return durationTokens.reduce(
     (maxDuration, token) => Math.max(maxDuration, parseDurationToken(token)),
-    0,
+    0
   );
 };
 
 const readTransitionProperties = (element: Element): readonly string[] => {
-  const computedProperties = resolveStyles(element).transitionProperty
-    .split(",")
+  const computedProperties = resolveStyles(element)
+    .transitionProperty.split(",")
     .map((property) => property.trim())
     .filter((property) => property.length > 0 && property !== "none");
 
@@ -122,11 +117,11 @@ const readTransitionProperties = (element: Element): readonly string[] => {
 
 const readMotionSignals = (
   document: Document,
-  selectedElement: Element,
+  selectedElement: Element
 ): MotionSignals => {
   const properties = readTransitionProperties(selectedElement);
   const layoutAffectingProperties = properties.filter((property) =>
-    LAYOUT_AFFECTING_PROPERTIES.has(property),
+    LAYOUT_AFFECTING_PROPERTIES.has(property)
   );
 
   return Object.freeze({
@@ -141,7 +136,7 @@ const readMotionSignals = (
 
 const resolveMatchingActionCount = (
   document: Document,
-  selectedElement: Element,
+  selectedElement: Element
 ): number => {
   const escapeClassName =
     document.defaultView?.CSS?.escape ??
@@ -164,12 +159,12 @@ const resolveMatchingActionCount = (
 export const inferCritiqueContext = (
   document: Document,
   selectedElement: Element,
-  scope: CritiqueScope,
+  scope: CritiqueScope
 ): Readonly<CritiqueContext> => {
   const scopeElement = resolveCritiqueScopeElement(
     document,
     selectedElement,
-    scope,
+    scope
   );
   const route =
     scopeElement.closest("[data-route]")?.getAttribute("data-route") ??
@@ -178,7 +173,7 @@ export const inferCritiqueContext = (
   const selectedClasses = Object.freeze(Array.from(selectedElement.classList));
   const matchingActionCount = resolveMatchingActionCount(
     document,
-    selectedElement,
+    selectedElement
   );
 
   return Object.freeze({
@@ -189,7 +184,8 @@ export const inferCritiqueContext = (
     sectionLabel: scopeElement.getAttribute("aria-label"),
     selectedClasses,
     cardCount: scopeElement.querySelectorAll(".card, [class*='card-']").length,
-    interactiveCount: scopeElement.querySelectorAll(INTERACTIVE_SELECTOR).length,
+    interactiveCount:
+      scopeElement.querySelectorAll(INTERACTIVE_SELECTOR).length,
     matchingActionCount,
     missingDocumentLanguage: !document.documentElement.hasAttribute("lang"),
     hasSectionHeading: Boolean(scopeElement.querySelector("h1, h2, h3")),

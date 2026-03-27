@@ -36,26 +36,11 @@ export interface SessionTransaction {
   readonly createdAt: string;
 }
 
-export interface TargetAnchorInput {
-  readonly runtimeId: string;
-  readonly selector: string;
-  readonly path: string;
-  readonly role: string | null;
-  readonly classes: readonly string[];
-}
+/** @deprecated Use TargetAnchor directly */
+export type TargetAnchorInput = TargetAnchor;
 
-export interface EditOperationInput {
-  readonly id: string;
-  readonly property: string;
-  readonly before: string;
-  readonly after: string;
-  readonly semanticKind: EditSemanticKind;
-}
+/** @deprecated Use EditOperation directly */
+export type EditOperationInput = EditOperation;
 
-export interface SessionTransactionInput {
-  readonly id: string;
-  readonly scope: EditScope;
-  readonly targets: readonly TargetAnchorInput[];
-  readonly operations: readonly EditOperationInput[];
-  readonly createdAt: string;
-}
+/** @deprecated Use SessionTransaction directly */
+export type SessionTransactionInput = SessionTransaction;

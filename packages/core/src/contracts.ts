@@ -25,38 +25,41 @@ export const EDIT_SEMANTIC_KINDS = [
   "component",
 ] as const satisfies readonly EditSemanticKind[];
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
-const isString = (value: unknown): value is string => typeof value === "string";
+export const isString = (value: unknown): value is string =>
+  typeof value === "string";
 
-const isNullableString = (value: unknown): value is string | null =>
+export const isNullableString = (value: unknown): value is string | null =>
   typeof value === "string" || value === null;
 
-const isStringArray = (value: unknown): value is readonly string[] =>
+export const isStringArray = (value: unknown): value is readonly string[] =>
   Array.isArray(value) && value.every(isString);
 
-const isOneOf = <T extends readonly string[]>(
+export const isOneOf = <T extends readonly string[]>(
   value: unknown,
-  allowed: T,
+  allowed: T
 ): value is T[number] => isString(value) && allowed.includes(value);
 
-const ISO_TIMESTAMP_PATTERN =
+export const ISO_TIMESTAMP_PATTERN =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
 
-const isIsoTimestamp = (value: unknown): value is string => {
+export const isIsoTimestamp = (value: unknown): value is string => {
   if (!isString(value)) {
     return false;
   }
 
-  return ISO_TIMESTAMP_PATTERN.test(value) && Number.isFinite(Date.parse(value));
+  return (
+    ISO_TIMESTAMP_PATTERN.test(value) && Number.isFinite(Date.parse(value))
+  );
 };
 
 const freezeStringArray = (value: readonly string[]): readonly string[] =>
   Object.freeze([...value]);
 
 export const createTargetAnchor = (
-  input: TargetAnchorInput,
+  input: TargetAnchorInput
 ): Readonly<TargetAnchor> =>
   Object.freeze({
     runtimeId: input.runtimeId,
@@ -67,7 +70,7 @@ export const createTargetAnchor = (
   });
 
 export const createEditOperation = (
-  input: EditOperationInput,
+  input: EditOperationInput
 ): Readonly<EditOperation> =>
   Object.freeze({
     id: input.id,
@@ -78,7 +81,7 @@ export const createEditOperation = (
   });
 
 export const createSessionTransaction = (
-  input: SessionTransactionInput,
+  input: SessionTransactionInput
 ): Readonly<SessionTransaction> =>
   Object.freeze({
     id: input.id,
@@ -117,7 +120,7 @@ export const isEditOperation = (value: unknown): value is EditOperation => {
 };
 
 export const isSessionTransaction = (
-  value: unknown,
+  value: unknown
 ): value is SessionTransaction => {
   if (!isRecord(value)) {
     return false;
@@ -135,7 +138,7 @@ export const isSessionTransaction = (
 };
 
 export const assertSessionTransaction = (
-  value: unknown,
+  value: unknown
 ): Readonly<SessionTransaction> => {
   if (!isSessionTransaction(value)) {
     throw new TypeError("Invalid session transaction payload");
