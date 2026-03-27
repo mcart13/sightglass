@@ -1,52 +1,41 @@
+// packages/react/src/components/SelectionOverlay.tsx
 import { useEffect, useState, type CSSProperties } from "react";
+import { motion, useMotionValue, useSpring } from "motion/react";
 import { useSightglassSessionState } from "../use-sightglass";
 
 const SELECTION_PADDING = 8;
 
-const hoverLabelStyle: CSSProperties = {
+const labelBaseStyle: CSSProperties = {
   position: "fixed",
   zIndex: 99998,
   padding: "2px 8px",
   borderRadius: 4,
-  background: "#3b82f6",
   color: "#fff",
   fontSize: 12,
   fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontWeight: 500,
   whiteSpace: "nowrap",
   pointerEvents: "none",
 };
 
-const selectionLabelStyle: CSSProperties = {
-  ...hoverLabelStyle,
-  background: "#2563eb",
-  fontWeight: 500,
-};
-
-const hoverOutlineStyle: CSSProperties = {
-  position: "fixed",
-  zIndex: 99998,
-  border: "2px dashed #60a5fa",
-  background: "rgba(96, 165, 250, 0.05)",
-  borderRadius: 4,
-  pointerEvents: "none",
-  transition: "all 75ms",
-};
-
-const selectionOutlineStyle: CSSProperties = {
-  position: "fixed",
-  zIndex: 99998,
-  border: "2px solid #2563eb",
-  borderRadius: 4,
-  pointerEvents: "none",
-  transition:
-    "left 0.25s cubic-bezier(0.22, 1, 0.36, 1), top 0.25s cubic-bezier(0.22, 1, 0.36, 1), width 0.25s cubic-bezier(0.22, 1, 0.36, 1), height 0.25s cubic-bezier(0.22, 1, 0.36, 1)",
-};
+const springConfig = { stiffness: 500, damping: 35, mass: 0.8 };
 
 export const SelectionOverlay = () => {
   const session = useSightglassSessionState();
   const [rect, setRect] = useState<DOMRect | null>(null);
   const selectedElement = session.selectedElement;
   const primaryAnchor = session.selection.best?.anchors[0] ?? null;
+
+  // Spring-animated position/size values
+  const rawTop = useMotionValue(0);
+  const rawLeft = useMotionValue(0);
+  const rawWidth = useMotionValue(0);
+  const rawHeight = useMotionValue(0);
+
+  const springTop = useSpring(rawTop, springConfig);
+  const springLeft = useSpring(rawLeft, springConfig);
+  const springWidth = useSpring(rawWidth, springConfig);
+  const springHeight = useSpring(rawHeight, springConfig);
 
   useEffect(() => {
     if (!selectedElement) {
@@ -60,13 +49,18 @@ export const SelectionOverlay = () => {
         setRect(null);
         return;
       }
-      setRect(selectedElement.getBoundingClientRect());
+      const r = selectedElement.getBoundingClientRect();
+      setRect(r);
+      rawTop.set(r.top - SELECTION_PADDING);
+      rawLeft.set(r.left - SELECTION_PADDING);
+      rawWidth.set(r.width + SELECTION_PADDING * 2);
+      rawHeight.set(r.height + SELECTION_PADDING * 2);
       frameId = requestAnimationFrame(update);
     };
     update();
 
     return () => cancelAnimationFrame(frameId);
-  }, [selectedElement]);
+  }, [selectedElement, rawTop, rawLeft, rawWidth, rawHeight]);
 
   if (!rect || !primaryAnchor) {
     return null;
@@ -78,24 +72,38 @@ export const SelectionOverlay = () => {
   return (
     <>
       {/* Label above selection */}
-      <div
+      <motion.div
         style={{
-          ...selectionLabelStyle,
-          top: Math.max(0, rect.top - SELECTION_PADDING - 24),
-          left: rect.left - SELECTION_PADDING + 8,
+          ...labelBaseStyle,
+          background: "#2563eb",
+          top: springTop,
+          left: springLeft,
+          y: -24,
+          x: 8,
         }}
+        initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+        transition={{ type: "spring", visualDuration: 0.2, bounce: 0.1 }}
       >
         {label}
-      </div>
-      {/* Selection outline with 8px padding */}
-      <div
+      </motion.div>
+
+      {/* Selection outline */}
+      <motion.div
         style={{
-          ...selectionOutlineStyle,
-          top: rect.top - SELECTION_PADDING,
-          left: rect.left - SELECTION_PADDING,
-          width: rect.width + SELECTION_PADDING * 2,
-          height: rect.height + SELECTION_PADDING * 2,
+          position: "fixed",
+          zIndex: 99998,
+          border: "2px solid #2563eb",
+          borderRadius: 4,
+          pointerEvents: "none",
+          top: springTop,
+          left: springLeft,
+          width: springWidth,
+          height: springHeight,
         }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15 }}
       />
     </>
   );
