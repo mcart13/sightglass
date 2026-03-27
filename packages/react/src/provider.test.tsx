@@ -18,6 +18,8 @@ import { SightglassProvider } from "./provider";
 import {
   useSightglassCommands,
   useSightglassOverlayState,
+  useSightglassReviewDraftCommands,
+  useSightglassReviewDraftState,
   useSightglassSessionState,
 } from "./use-sightglass";
 import { EditorPanel } from "./components/EditorPanel";
@@ -81,7 +83,7 @@ const createSelection = (): Readonly<SelectionResult> =>
           Object.freeze({
             runtimeId: "similar-target",
             selector: "[data-testid='similar-target']",
-            path: "aside > button:nth-of-type(1)",
+            path: "main > button:nth-of-type(2)",
             role: "button",
             classes: Object.freeze([
               "cta",
@@ -684,6 +686,98 @@ describe("@sightglass/react provider", () => {
 
     expect(activeRoot).toBeNull();
     expect(activeContainer).toBeNull();
+  });
+
+  it("hydrates review draft state without clearing omitted fields", () => {
+    const controller = createController();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    activeRoot = root;
+    activeContainer = container;
+
+    const ReviewDraftProbe = () => {
+      const reviewDraft = useSightglassReviewDraftState();
+      const reviewDraftCommands = useSightglassReviewDraftCommands();
+
+      return (
+        <div>
+          <button
+            data-testid="seed-review-draft"
+            type="button"
+            onClick={() => {
+              reviewDraftCommands.setCritiquePerspective("jhey");
+              reviewDraftCommands.setCritiqueScope("page");
+              reviewDraftCommands.setSelectedFindingId("finding-1");
+              reviewDraftCommands.setSelectedDirectionId("playful");
+              reviewDraftCommands.setMotionValue("duration", 420);
+            }}
+          >
+            seed
+          </button>
+          <button
+            data-testid="hydrate-review-draft"
+            type="button"
+            onClick={() =>
+              reviewDraftCommands.hydrateReviewDraft({
+                critiquePerspective: "jakub",
+              })
+            }
+          >
+            hydrate
+          </button>
+          <output
+            data-testid="review-draft-probe"
+            data-critique-perspective={reviewDraft.critiquePerspective}
+            data-critique-scope={reviewDraft.critiqueScope}
+            data-selected-finding-id={reviewDraft.selectedFindingId ?? "none"}
+            data-selected-direction-id={reviewDraft.selectedDirectionId ?? "none"}
+            data-motion-duration={String(reviewDraft.motionValues.duration ?? 0)}
+          />
+        </div>
+      );
+    };
+
+    act(() => {
+      root.render(
+        <SightglassProvider controller={controller}>
+          <ReviewDraftProbe />
+        </SightglassProvider>,
+      );
+    });
+
+    act(() => {
+      container
+        .querySelector("[data-testid='seed-review-draft']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const probe = () => container.querySelector("[data-testid='review-draft-probe']");
+
+    expect(probe()?.getAttribute("data-critique-perspective")).toBe("jhey");
+    expect(probe()?.getAttribute("data-critique-scope")).toBe("page");
+    expect(probe()?.getAttribute("data-selected-finding-id")).toBe("finding-1");
+    expect(probe()?.getAttribute("data-selected-direction-id")).toBe("playful");
+    expect(probe()?.getAttribute("data-motion-duration")).toBe("420");
+
+    act(() => {
+      container
+        .querySelector("[data-testid='hydrate-review-draft']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(probe()?.getAttribute("data-critique-perspective")).toBe("jakub");
+    expect(probe()?.getAttribute("data-critique-scope")).toBe("page");
+    expect(probe()?.getAttribute("data-selected-finding-id")).toBe("finding-1");
+    expect(probe()?.getAttribute("data-selected-direction-id")).toBe("playful");
+    expect(probe()?.getAttribute("data-motion-duration")).toBe("420");
+
+    act(() => {
+      root.unmount();
+    });
+
+    activeRoot = null;
+    activeContainer = null;
   });
 
   it("supports controllers whose store methods rely on instance binding", () => {

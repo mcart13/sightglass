@@ -1,3 +1,5 @@
+import { playgroundUrl } from "../playground-url.js";
+
 const capabilityHighlights = [
   "Live editing inside the running app",
   "Semantic scopes before raw CSS",
@@ -92,7 +94,7 @@ export const HomeRoute = (): React.JSX.Element => (
           same local-first workflow.
         </p>
         <div className="hero-actions">
-          <a className="cta-primary" href="http://127.0.0.1:4173">
+          <a className="cta-primary" href={playgroundUrl}>
             Open the playground
           </a>
           <a className="cta-secondary" href="#/docs">

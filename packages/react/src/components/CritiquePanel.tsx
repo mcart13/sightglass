@@ -123,7 +123,9 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
         <div style={findingCardStyle}>
           <strong>{leadFinding?.title ?? "No critique findings"}</strong>
           <span style={{ color: "#475569", fontSize: 13 }}>
-            {report.context.scopeLabel} · {CATEGORY_LABELS[leadFinding?.category ?? "visual-design"]}
+            {leadFinding
+              ? `${report.context.scopeLabel} · ${CATEGORY_LABELS[leadFinding.category]}`
+              : report.context.scopeLabel}
           </span>
         </div>
       </div>

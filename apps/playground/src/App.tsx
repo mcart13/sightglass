@@ -3,6 +3,8 @@ import {
   createEditOperation,
   createSessionTransaction,
   createSightglassController,
+  generateAnchor,
+  type EditScope,
   type SelectionAnchor,
   type SessionTransaction,
   type SightglassController,
@@ -150,32 +152,83 @@ const readOperationBefore = (
 
 const buildTransactionsFromHistory = (
   session: Readonly<SightglassSessionSnapshot>,
-  anchor: SelectionAnchor | null,
   createdAt: string,
 ): readonly SessionTransaction[] => {
-  if (!anchor || session.history.applied.length === 0) {
+  if (session.history.applied.length === 0) {
     return Object.freeze([]);
   }
 
-  const operations = session.history.applied.map((appliedState, index) =>
-    createEditOperation({
-      id: `playground-op-${index + 1}`,
-      property: appliedState.property,
-      before: appliedState.before,
-      after: appliedState.after,
-      semanticKind: appliedState.semanticKind,
-    }),
-  );
+  const inferScope = (semanticKind: string): EditScope => {
+    if (semanticKind === "token") {
+      return "token";
+    }
 
-  return Object.freeze([
-    createSessionTransaction({
-      id: `playground-session-${createdAt}`,
-      scope: "single",
-      targets: [anchor],
-      operations,
-      createdAt,
-    }),
-  ]);
+    if (semanticKind === "component") {
+      return "component";
+    }
+
+    return "single";
+  };
+
+  return Object.freeze(
+    session.history.applied.map((appliedState, index) =>
+      createSessionTransaction({
+        id: `playground-session-${createdAt}-${index + 1}`,
+        scope: inferScope(appliedState.semanticKind),
+        targets: [generateAnchor(appliedState.target)],
+        operations: [
+          createEditOperation({
+            id: `playground-op-${index + 1}`,
+            property: appliedState.property,
+            before: appliedState.before,
+            after: appliedState.after,
+            semanticKind: appliedState.semanticKind,
+          }),
+        ],
+        createdAt,
+      }),
+    ),
+  );
+};
+
+const buildManifestTargets = (
+  transactions: readonly SessionTransaction[],
+  fallbackAnchor: SelectionAnchor | null,
+) => {
+  if (transactions.length === 0) {
+    return fallbackAnchor
+      ? Object.freeze([
+          {
+            anchor: fallbackAnchor,
+            scope: "single" as const,
+            semanticLabel: "Current playground target",
+          },
+        ])
+      : Object.freeze([]);
+  }
+
+  const seen = new Set<string>();
+  const targets: Array<{
+    anchor: SessionTransaction["targets"][number] | SelectionAnchor;
+    scope: EditScope;
+  }> = [];
+
+  for (const transaction of transactions) {
+    for (const transactionTarget of transaction.targets) {
+      const key = `${transaction.scope}:${transactionTarget.runtimeId}:${transactionTarget.selector}`;
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      targets.push({
+        anchor: transactionTarget,
+        scope: transaction.scope,
+      });
+    }
+  }
+
+  return Object.freeze(targets);
 };
 
 const inspectAnchor = (
@@ -226,6 +279,9 @@ const SelectionBridge = () => {
       if (!selectable) {
         return;
       }
+
+      event.preventDefault();
+      event.stopPropagation();
 
       const rect = selectable.getBoundingClientRect();
       commands.inspectAtPoint({
@@ -300,18 +356,13 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
     }
 
     const createdAt = new Date().toISOString();
+    const transactions = buildTransactionsFromHistory(session, createdAt);
 
     return createChangeManifest({
       route: "/playground/landing",
       sessionId: `playground-${createdAt}`,
-      targets: [
-        {
-          anchor: selectedAnchor,
-          scope: "single",
-          semanticLabel: "Current playground target",
-        },
-      ],
-      transactions: buildTransactionsFromHistory(session, selectedAnchor, createdAt),
+      targets: buildManifestTargets(transactions, selectedAnchor),
+      transactions,
       critique: critiqueReport.findings,
       exploration:
         activeDirection && critiqueReport

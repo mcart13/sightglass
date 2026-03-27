@@ -13,9 +13,9 @@ export const ContentEdgeCasesFixture = () => (
         data-sightglass-selectable="true"
         className="card rounded-xl bg-surface-0 shadow-tight px-6 py-5 gap-4 long-copy"
       >
-        <strong style={{ fontSize: 22 }}>
+        <h3 style={{ margin: 0, fontSize: 22 }}>
           Long-form review context should still scan well when critique is open.
-        </strong>
+        </h3>
         <p style={{ margin: 0 }}>
           Sightglass lives beside the product, so the working page still needs to hold long paragraphs,
           status notes, and dense review artifacts without collapsing into an unreadable wall. The copy
@@ -35,13 +35,16 @@ export const ContentEdgeCasesFixture = () => (
         className="card rounded-xl bg-surface-1 shadow-tight px-6 py-5 gap-4 empty-state"
       >
         <div style={{ display: "grid", gap: 10, justifyItems: "center" }}>
-          <strong style={{ fontSize: 20 }}>No review sessions yet</strong>
+          <h3 style={{ margin: 0, fontSize: 20 }}>No review sessions yet</h3>
           <span className="text-ink-muted">
             Save the current critique and restore it later without leaving the surface.
           </span>
           <button
             type="button"
             className="card-action secondary rounded-pill px-4 py-3"
+            disabled
+            aria-disabled="true"
+            title="Demo action is not wired in this fixture"
           >
             Seed demo data
           </button>
@@ -58,7 +61,7 @@ export const ContentEdgeCasesFixture = () => (
           style={{ minWidth: 180 }}
         >
           <span className="section-kicker">{viewport}</span>
-          <strong style={{ fontSize: 22 }}>Pressure-test this layout</strong>
+          <h3 style={{ margin: 0, fontSize: 22 }}>Pressure-test this layout</h3>
         </div>
       ))}
     </div>

@@ -11,31 +11,15 @@ test("runs critique, picks a direction, and exposes motion guidance", async ({
   await expect(page.getByTestId("playground-selected-target")).toContainText(
     "fixture-motion-bad",
   );
-  await page.evaluate(() => {
-    (
-      document.querySelector("[data-testid='playground-scope-page']") as
-        | HTMLButtonElement
-        | null
-    )?.click();
-    (
-      document.querySelector("[data-testid='playground-perspective-jakub']") as
-        | HTMLButtonElement
-        | null
-    )?.click();
-  });
+  await page.getByTestId("playground-scope-page").click();
+  await page.getByTestId("playground-perspective-jakub").click();
   await expect(page.getByTestId("playground-top-finding")).not.toHaveText(
     "No critique findings yet.",
   );
   await expect(page.getByTestId("playground-motion-warning")).not.toHaveText(
     "No motion warning.",
   );
-  await page.evaluate(() => {
-    (
-      document.querySelector("[data-testid='playground-direction-playful']") as
-        | HTMLButtonElement
-        | null
-    )?.click();
-  });
+  await page.getByTestId("playground-direction-playful").click();
   await expect(page.getByTestId("playground-top-direction")).toContainText(
     "More playful",
   );

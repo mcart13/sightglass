@@ -49,26 +49,41 @@ const resolveScopeLabel = (scope: CritiqueScope): string => {
   return "Selected element";
 };
 
-const readTransitionDuration = (element: Element): number => {
-  const style = (element as HTMLElement).style;
-  const duration = style.transitionDuration || "";
-
-  if (duration.endsWith("ms")) {
-    return Number.parseFloat(duration);
-  }
-
-  if (duration.endsWith("s")) {
-    return Number.parseFloat(duration) * 1000;
-  }
-
-  const transition = style.transition || "";
-  const match = transition.match(/(\d+(?:\.\d+)?)m?s/);
+const parseDurationToken = (value: string): number => {
+  const match = value.trim().match(/^(\d+(?:\.\d+)?)(ms|s)$/);
 
   if (!match) {
     return 0;
   }
 
-  return transition.includes("ms")
+  const duration = Number.parseFloat(match[1]);
+
+  return match[2] === "ms" ? duration : duration * 1000;
+};
+
+const readTransitionDuration = (element: Element): number => {
+  const style = (element as HTMLElement).style;
+  const duration = style.transitionDuration
+    .split(",")
+    .map((token) => token.trim())
+    .find(Boolean);
+
+  if (duration) {
+    const parsedDuration = parseDurationToken(duration);
+
+    if (parsedDuration > 0) {
+      return parsedDuration;
+    }
+  }
+
+  const transition = style.transition || "";
+  const match = transition.match(/(\d+(?:\.\d+)?)(ms|s)/);
+
+  if (!match) {
+    return 0;
+  }
+
+  return match[2] === "ms"
     ? Number.parseFloat(match[1])
     : Number.parseFloat(match[1]) * 1000;
 };

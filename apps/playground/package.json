@@ -22,7 +22,7 @@
     "dev": "vite --config vite.config.ts --host 127.0.0.1 --port 4173 --strictPort",
     "build": "vite build --config vite.config.ts && yarn run -T tsc -p tsconfig.json --noEmit",
     "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
-    "test": "yarn run -T vitest run src/routes/review.test.ts",
+    "test": "yarn run -T vitest run --dir src",
     "test:e2e": "yarn run -T playwright test --config=playwright.config.ts --reporter=line --workers=1",
     "lint": "echo 'lint not configured for @sightglass/playground yet'"
   }

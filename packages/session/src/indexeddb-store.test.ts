@@ -211,6 +211,128 @@ const createRecord = (): SessionRecord =>
     updatedAt: "2026-03-26T12:05:00.000Z",
   });
 
+class MockRequest<T> extends EventTarget {
+  result!: T;
+
+  error: DOMException | null = null;
+}
+
+class MockTransaction extends EventTarget {
+  error: DOMException | null = null;
+
+  complete(commit: () => void): void {
+    commit();
+    this.dispatchEvent(new Event("complete"));
+  }
+}
+
+class MockObjectStore {
+  constructor(
+    private readonly records: Map<string, SessionRecord>,
+    private readonly transaction: MockTransaction,
+  ) {}
+
+  put(record: SessionRecord): IDBRequest<IDBValidKey> {
+    const request = new MockRequest<IDBValidKey>();
+
+    queueMicrotask(() => {
+      request.result = record.id;
+      request.dispatchEvent(new Event("success"));
+      queueMicrotask(() => {
+        this.transaction.complete(() => {
+          this.records.set(record.id, structuredClone(record));
+        });
+      });
+    });
+
+    return request as unknown as IDBRequest<IDBValidKey>;
+  }
+
+  get(id: string): IDBRequest<SessionRecord | undefined> {
+    const request = new MockRequest<SessionRecord | undefined>();
+
+    queueMicrotask(() => {
+      const record = this.records.get(id);
+      request.result = record ? structuredClone(record) : undefined;
+      request.dispatchEvent(new Event("success"));
+    });
+
+    return request as unknown as IDBRequest<SessionRecord | undefined>;
+  }
+
+  getAll(): IDBRequest<SessionRecord[]> {
+    const request = new MockRequest<SessionRecord[]>();
+
+    queueMicrotask(() => {
+      request.result = [...this.records.values()].map((record) => structuredClone(record));
+      request.dispatchEvent(new Event("success"));
+    });
+
+    return request as unknown as IDBRequest<SessionRecord[]>;
+  }
+
+  delete(id: string): IDBRequest<undefined> {
+    const request = new MockRequest<undefined>();
+
+    queueMicrotask(() => {
+      request.result = undefined;
+      request.dispatchEvent(new Event("success"));
+      queueMicrotask(() => {
+        this.transaction.complete(() => {
+          this.records.delete(id);
+        });
+      });
+    });
+
+    return request as unknown as IDBRequest<undefined>;
+  }
+}
+
+class MockDatabase {
+  readonly objectStoreNames = {
+    contains: () => true,
+  };
+
+  constructor(private readonly records: Map<string, SessionRecord>) {}
+
+  transaction(): IDBTransaction {
+    const transaction = new MockTransaction();
+
+    return {
+      addEventListener: transaction.addEventListener.bind(transaction),
+      objectStore: () => new MockObjectStore(this.records, transaction),
+    } as unknown as IDBTransaction;
+  }
+}
+
+class MockIndexedDbFactory {
+  private readonly database = new MockDatabase(new Map<string, SessionRecord>());
+
+  open(): IDBOpenDBRequest {
+    const request = new MockRequest<IDBDatabase>();
+
+    queueMicrotask(() => {
+      request.result = this.database as unknown as IDBDatabase;
+      request.dispatchEvent(new Event("success"));
+    });
+
+    return request as unknown as IDBOpenDBRequest;
+  }
+}
+
+class FailingIndexedDbFactory {
+  open(): IDBOpenDBRequest {
+    const request = new MockRequest<IDBDatabase>();
+
+    queueMicrotask(() => {
+      request.error = new DOMException("IndexedDB unavailable", "InvalidStateError");
+      request.dispatchEvent(new Event("error"));
+    });
+
+    return request as unknown as IDBOpenDBRequest;
+  }
+}
+
 describe("@sightglass/session store", () => {
   it("saves, lists, loads, exports, imports, and preserves review state", async () => {
     const store = await createIndexedDbSessionStore({
@@ -240,5 +362,44 @@ describe("@sightglass/session store", () => {
     const imported = await store.importSession(exported);
     expect(imported.reviewDraft.critiquePerspective).toBe("emil");
     expect(imported.history.applied[0]?.after).toBe("#ff3366");
+  });
+
+  it("rejects malformed imported payloads before storing them", async () => {
+    const store = await createIndexedDbSessionStore({
+      adapter: createMemorySessionAdapter(),
+    });
+
+    await expect(store.importSession(JSON.stringify({ id: "broken" }))).rejects.toThrow(
+      "Invalid Sightglass session payload.",
+    );
+    await expect(store.list()).resolves.toEqual([]);
+  });
+
+  it("waits for IndexedDB write transactions to complete before resolving", async () => {
+    const store = await createIndexedDbSessionStore({
+      indexedDb: new MockIndexedDbFactory() as unknown as IDBFactory,
+    });
+    const record = createRecord();
+
+    await store.save(record);
+
+    await expect(store.list()).resolves.toHaveLength(1);
+
+    await store.remove(record.id);
+    await expect(store.list()).resolves.toEqual([]);
+  });
+
+  it("falls back to the memory adapter when IndexedDB open fails", async () => {
+    const store = await createIndexedDbSessionStore({
+      indexedDb: new FailingIndexedDbFactory() as unknown as IDBFactory,
+    });
+    const record = createRecord();
+
+    await store.save(record);
+
+    await expect(store.load(record.id)).resolves.toMatchObject({
+      id: record.id,
+      name: record.name,
+    });
   });
 });

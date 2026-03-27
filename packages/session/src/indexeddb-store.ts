@@ -1,4 +1,4 @@
-import type { SessionRecord } from "./session-schema.js";
+import { assertSessionRecord, type SessionRecord } from "./session-schema.js";
 
 const DEFAULT_DATABASE_NAME = "sightglass-sessions";
 const STORE_NAME = "sessions";
@@ -62,6 +62,13 @@ const promisifyRequest = <T>(request: IDBRequest<T>): Promise<T> =>
     request.addEventListener("error", () => reject(request.error));
   });
 
+const promisifyTransaction = (transaction: IDBTransaction): Promise<void> =>
+  new Promise((resolve, reject) => {
+    transaction.addEventListener("complete", () => resolve());
+    transaction.addEventListener("abort", () => reject(transaction.error));
+    transaction.addEventListener("error", () => reject(transaction.error));
+  });
+
 const openIndexedDb = async (
   indexedDb: IDBFactory,
   databaseName: string,
@@ -91,8 +98,17 @@ const createIndexedDbAdapter = async (
   ): Promise<T> => {
     const transaction = database.transaction(STORE_NAME, mode);
     const request = operation(transaction.objectStore(STORE_NAME));
+    const requestResult = promisifyRequest(request);
 
-    return promisifyRequest(request);
+    if (mode === "readwrite") {
+      const [result] = await Promise.all([
+        requestResult,
+        promisifyTransaction(transaction),
+      ]);
+      return result;
+    }
+
+    return requestResult;
   };
 
   return {
@@ -118,31 +134,37 @@ const createIndexedDbAdapter = async (
 };
 
 const parseSessionPayload = (payload: string): SessionRecord => {
-  const parsed = JSON.parse(payload) as SessionRecord;
+  return assertSessionRecord(JSON.parse(payload));
+};
 
-  if (!parsed || typeof parsed !== "object" || typeof parsed.id !== "string") {
-    throw new Error("Invalid Sightglass session payload.");
+const resolveSessionAdapter = async (
+  options: CreateIndexedDbSessionStoreOptions,
+): Promise<SessionStoreAdapter> => {
+  if (options.adapter) {
+    return options.adapter;
   }
 
-  return parsed;
+  const indexedDbFactory =
+    options.indexedDb ?? (typeof indexedDB !== "undefined" ? indexedDB : null);
+
+  if (!indexedDbFactory) {
+    return createMemorySessionAdapter();
+  }
+
+  try {
+    return await createIndexedDbAdapter(
+      indexedDbFactory,
+      options.databaseName ?? DEFAULT_DATABASE_NAME,
+    );
+  } catch {
+    return createMemorySessionAdapter();
+  }
 };
 
 export const createIndexedDbSessionStore = async (
   options: CreateIndexedDbSessionStoreOptions = {},
 ): Promise<SessionStore> => {
-  const adapter =
-    options.adapter ??
-    (options.indexedDb
-      ? await createIndexedDbAdapter(
-          options.indexedDb,
-          options.databaseName ?? DEFAULT_DATABASE_NAME,
-        )
-      : typeof indexedDB !== "undefined"
-        ? await createIndexedDbAdapter(
-            indexedDB,
-            options.databaseName ?? DEFAULT_DATABASE_NAME,
-          )
-        : createMemorySessionAdapter());
+  const adapter = await resolveSessionAdapter(options);
 
   return {
     async save(record) {

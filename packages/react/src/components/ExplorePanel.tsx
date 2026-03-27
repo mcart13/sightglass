@@ -95,6 +95,7 @@ export const ExplorePanel = ({ session }: ExplorePanelProps) => {
             key={direction.id}
             type="button"
             data-direction-id={direction.id}
+            aria-pressed={selectedDirection?.id === direction.id}
             style={optionStyle(selectedDirection?.id === direction.id)}
             onClick={() => reviewDraftCommands.setSelectedDirectionId(direction.id)}
           >

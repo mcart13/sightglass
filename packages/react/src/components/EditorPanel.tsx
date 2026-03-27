@@ -45,7 +45,7 @@ export const EditorPanel = () => {
   const overlay = useSightglassOverlayState();
   const commands = useSightglassCommands();
   const primaryAnchor = session.selection.best?.anchors[0] ?? null;
-  const scopeCount = session.selection.similar.length + 1;
+  const scopeCount = session.selection.similar.length + (primaryAnchor ? 1 : 0);
 
   if (!overlay.panelOpen) {
     return (
@@ -105,7 +105,13 @@ export const EditorPanel = () => {
 
         <div style={detailRowStyle}>
           <span style={sectionLabelStyle}>Scope candidates</span>
-          <strong>{scopeCount === 1 ? "Only this target" : `${scopeCount} live candidates`}</strong>
+          <strong>
+            {scopeCount === 0
+              ? "No candidates"
+              : scopeCount === 1
+                ? "Only this target"
+                : `${scopeCount} live candidates`}
+          </strong>
         </div>
 
         <div style={detailRowStyle}>

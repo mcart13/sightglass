@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { playgroundUrl } from "./playground-url.js";
 import { DocsRoute } from "./routes/docs.js";
 import { HomeRoute } from "./routes/index.js";
 
@@ -342,7 +343,6 @@ export const App = (): React.JSX.Element => {
       setRoute(resolveRoute(window.location.hash));
     };
 
-    handleHashChange();
     window.addEventListener("hashchange", handleHashChange);
 
     return () => {
@@ -375,7 +375,7 @@ export const App = (): React.JSX.Element => {
               >
                 Docs
               </a>
-              <a className="site-nav-link" href="http://127.0.0.1:4173">
+              <a className="site-nav-link" href={playgroundUrl}>
                 Playground
               </a>
             </nav>

@@ -174,17 +174,25 @@ export const SightglassProvider = ({
           [controlId]: value,
         })),
       hydrateReviewDraft: (draft) => {
-        if (draft.critiquePerspective) {
+        if (draft.critiquePerspective !== undefined) {
           setCritiquePerspective(draft.critiquePerspective);
         }
 
-        if (draft.critiqueScope) {
+        if (draft.critiqueScope !== undefined) {
           setCritiqueScope(draft.critiqueScope);
         }
 
-        setSelectedFindingId(draft.selectedFindingId ?? null);
-        setSelectedDirectionId(draft.selectedDirectionId ?? null);
-        setMotionValues(draft.motionValues ? { ...draft.motionValues } : {});
+        if (draft.selectedFindingId !== undefined) {
+          setSelectedFindingId(draft.selectedFindingId);
+        }
+
+        if (draft.selectedDirectionId !== undefined) {
+          setSelectedDirectionId(draft.selectedDirectionId);
+        }
+
+        if (draft.motionValues !== undefined) {
+          setMotionValues({ ...draft.motionValues });
+        }
       },
     }),
     [],

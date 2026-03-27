@@ -51,6 +51,56 @@ const scopeButtonStyle = (
   cursor: "pointer",
 });
 
+const scoreResolvedCandidate = (
+  candidate: Element,
+  anchor: SelectionMatch["anchors"][number],
+): number => {
+  const classScore = anchor.classes.reduce(
+    (score, className) => score + (candidate.classList.contains(className) ? 1 : 0),
+    0,
+  );
+  const roleScore = anchor.role && candidate.getAttribute("role") === anchor.role ? 2 : 0;
+
+  return classScore + roleScore;
+};
+
+const resolveAnchorElement = (
+  selectedElement: Element,
+  anchor: SelectionMatch["anchors"][number],
+): Element | null => {
+  const document = selectedElement.ownerDocument;
+  const selectors = Array.from(
+    new Set([anchor.selector, ...anchor.alternates, anchor.path].filter(Boolean)),
+  );
+  let bestCandidate: Element | null = null;
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (const selector of selectors) {
+    try {
+      const matches = Array.from(document.querySelectorAll(selector)).filter(
+        (candidate) => candidate !== selectedElement,
+      );
+
+      if (matches.length === 1) {
+        return matches[0];
+      }
+
+      for (const candidate of matches) {
+        const score = scoreResolvedCandidate(candidate, anchor);
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestCandidate = candidate;
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return bestCandidate;
+};
+
 const resolveSimilarElements = (
   selectedElement: Element | null,
   matches: readonly SelectionMatch[],
@@ -59,20 +109,15 @@ const resolveSimilarElements = (
     return Object.freeze([]);
   }
 
-  const document = selectedElement.ownerDocument;
   const resolved = new Set<Element>();
 
   for (const match of matches) {
     for (const anchor of match.anchors) {
-      try {
-        const candidate = document.querySelector(anchor.selector);
+      const candidate = resolveAnchorElement(selectedElement, anchor);
 
-        if (candidate && candidate !== selectedElement) {
-          resolved.add(candidate);
-          break;
-        }
-      } catch {
-        continue;
+      if (candidate) {
+        resolved.add(candidate);
+        break;
       }
     }
   }

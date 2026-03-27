@@ -3,7 +3,9 @@ import {
   createEditOperation,
   createSessionTransaction,
   generateAnchor,
+  type EditScope,
   type SelectionAnchor,
+  type SessionTransaction,
   type SightglassSessionSnapshot,
 } from "@sightglass/core";
 import {
@@ -97,32 +99,83 @@ const buildRoute = (session: Readonly<SightglassSessionSnapshot>): string => {
 
 const buildTransactions = (
   session: Readonly<SightglassSessionSnapshot>,
-  anchor: SelectionAnchor | null,
   createdAt: string,
-) => {
-  if (!anchor || session.history.applied.length === 0) {
+): readonly SessionTransaction[] => {
+  if (session.history.applied.length === 0) {
     return Object.freeze([]);
   }
 
-  const operations = session.history.applied.map((appliedState, index) =>
-    createEditOperation({
-      id: `session-op-${index + 1}`,
-      property: appliedState.property,
-      before: appliedState.before,
-      after: appliedState.after,
-      semanticKind: appliedState.semanticKind,
-    }),
-  );
+  const inferScope = (semanticKind: string): EditScope => {
+    if (semanticKind === "token") {
+      return "token";
+    }
 
-  return Object.freeze([
-    createSessionTransaction({
-      id: `session-transaction-${createdAt}`,
-      scope: "single",
-      targets: [anchor],
-      operations,
-      createdAt,
-    }),
-  ]);
+    if (semanticKind === "component") {
+      return "component";
+    }
+
+    return "single";
+  };
+
+  return Object.freeze(
+    session.history.applied.map((appliedState, index) =>
+      createSessionTransaction({
+        id: `session-transaction-${createdAt}-${index + 1}`,
+        scope: inferScope(appliedState.semanticKind),
+        targets: [generateAnchor(appliedState.target)],
+        operations: [
+          createEditOperation({
+            id: `session-op-${index + 1}`,
+            property: appliedState.property,
+            before: appliedState.before,
+            after: appliedState.after,
+            semanticKind: appliedState.semanticKind,
+          }),
+        ],
+        createdAt,
+      }),
+    ),
+  );
+};
+
+const buildManifestTargets = (
+  transactions: readonly SessionTransaction[],
+  fallbackAnchor: SelectionAnchor | null,
+) => {
+  if (transactions.length === 0) {
+    return fallbackAnchor
+      ? Object.freeze([
+          {
+            anchor: fallbackAnchor,
+            scope: "single" as const,
+            semanticLabel: "Current selection",
+          },
+        ])
+      : Object.freeze([]);
+  }
+
+  const seen = new Set<string>();
+  const targets: Array<{
+    anchor: SessionTransaction["targets"][number] | SelectionAnchor;
+    scope: EditScope;
+  }> = [];
+
+  for (const transaction of transactions) {
+    for (const transactionTarget of transaction.targets) {
+      const key = `${transaction.scope}:${transactionTarget.runtimeId}:${transactionTarget.selector}`;
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      targets.push({
+        anchor: transactionTarget,
+        scope: transaction.scope,
+      });
+    }
+  }
+
+  return Object.freeze(targets);
 };
 
 export const SessionPanel = ({ session }: SessionPanelProps) => {
@@ -177,6 +230,7 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
     }
 
     const createdAt = new Date().toISOString();
+    const transactions = buildTransactions(session, createdAt);
     const exploration =
       selectedDirection && critiqueReport
         ? [
@@ -191,8 +245,8 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
     const manifest = createChangeManifest({
       route,
       sessionId: `session-${createdAt}`,
-      targets: [{ anchor: target, scope: "single", semanticLabel: "Current selection" }],
-      transactions: buildTransactions(session, target, createdAt),
+      targets: buildManifestTargets(transactions, target),
+      transactions,
       critique: critiqueReport.findings,
       exploration,
       motionStoryboard,
@@ -296,11 +350,19 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
       return;
     }
 
-    const imported = await store.importSession(payloadText);
-    await refreshSavedSessions(store);
-    setSessionName(imported.name);
-    reviewDraftCommands.hydrateReviewDraft(imported.reviewDraft);
-    setStatusText(`Imported ${imported.name}.`);
+    try {
+      const imported = await store.importSession(payloadText);
+      await refreshSavedSessions(store);
+      setSessionName(imported.name);
+      reviewDraftCommands.hydrateReviewDraft(imported.reviewDraft);
+      setStatusText(`Imported ${imported.name}.`);
+    } catch (error) {
+      setStatusText(
+        error instanceof Error
+          ? `Import failed: ${error.message}`
+          : "Import failed: Unable to import the session payload.",
+      );
+    }
   };
 
   return (

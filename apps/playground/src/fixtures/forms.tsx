@@ -19,7 +19,7 @@ export const FormsFixture = () => (
         </label>
         <label className="field-stack">
           <span>Intent</span>
-          <select defaultValue="review">
+          <select name="intent" defaultValue="review">
             <option value="review">Review a landing surface</option>
             <option value="explore">Explore directions</option>
             <option value="motion">Tune motion</option>
@@ -30,6 +30,7 @@ export const FormsFixture = () => (
       <label className="field-stack">
         <span>What changed?</span>
         <textarea
+          name="changes"
           rows={4}
           defaultValue="The launch surface gained live critique, motion notes, and session export. Now we need the hierarchy to feel sharper on mobile."
         />
