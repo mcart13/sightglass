@@ -8,6 +8,7 @@ export const FormsFixture = () => (
     </div>
 
     <form
+      onSubmit={(event) => event.preventDefault()}
       data-testid="fixture-form"
       data-sightglass-selectable="true"
       className="card rounded-xl bg-surface-0 shadow-tight px-6 py-5 gap-6"

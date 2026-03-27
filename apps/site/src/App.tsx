@@ -5,8 +5,10 @@ import { HomeRoute } from "./routes/index.js";
 
 type SiteRoute = "home" | "docs";
 
-const resolveRoute = (hash: string): SiteRoute =>
-  hash === "#/docs" ? "docs" : "home";
+const resolveRoute = (hash: string): SiteRoute => {
+  const normalized = hash.trim().replace(/\/+$/, "").toLowerCase();
+  return normalized === "#/docs" ? "docs" : "home";
+};
 
 const appStyles = `
   :root {

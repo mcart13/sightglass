@@ -186,10 +186,20 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
   const [sessionName, setSessionName] = useState("Current review");
   const [payloadText, setPayloadText] = useState("");
   const [statusText, setStatusText] = useState("Session storage initializes locally.");
+  const [loadedRecord, setLoadedRecord] = useState<SessionRecord | null>(null);
+  const [loadedRecordSignature, setLoadedRecordSignature] = useState<string | null>(null);
 
   const route = buildRoute(session);
   const selectedElement = session.selectedElement;
   const target = resolveTargetAnchor(session);
+  const liveSessionSignature = useMemo(
+    () =>
+      JSON.stringify({
+        selectedSelector: target?.selector ?? null,
+        appliedCount: session.history.applied.length,
+      }),
+    [session.history.applied.length, target?.selector],
+  );
   const critiqueReport = useMemo(() => {
     if (!selectedElement || !target) {
       return null;
@@ -224,7 +234,7 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
     () => (critiqueReport ? createMotionTuningSchema(critiqueReport.context) : null),
     [critiqueReport],
   );
-  const record = useMemo(() => {
+  const liveRecord = useMemo(() => {
     if (!target || !critiqueReport || !motionStoryboard || !motionTuningSchema) {
       return null;
     }
@@ -281,6 +291,15 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
   ]);
 
   useEffect(() => {
+    if (loadedRecordSignature && liveSessionSignature !== loadedRecordSignature) {
+      setLoadedRecord(null);
+      setLoadedRecordSignature(null);
+    }
+  }, [liveSessionSignature, loadedRecordSignature]);
+
+  const record = loadedRecord ?? liveRecord;
+
+  useEffect(() => {
     let cancelled = false;
 
     void createIndexedDbSessionStore().then(async (sessionStore) => {
@@ -330,6 +349,8 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
     setSessionName(latest.name);
     setPayloadText(JSON.stringify(latest, null, 2));
     reviewDraftCommands.hydrateReviewDraft(latest.reviewDraft);
+    setLoadedRecord(latest);
+    setLoadedRecordSignature(liveSessionSignature);
     setStatusText(`Loaded ${latest.name}.`);
   };
 
@@ -354,7 +375,10 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
       const imported = await store.importSession(payloadText);
       await refreshSavedSessions(store);
       setSessionName(imported.name);
+      setPayloadText(JSON.stringify(imported, null, 2));
       reviewDraftCommands.hydrateReviewDraft(imported.reviewDraft);
+      setLoadedRecord(imported);
+      setLoadedRecordSignature(liveSessionSignature);
       setStatusText(`Imported ${imported.name}.`);
     } catch (error) {
       setStatusText(
@@ -436,7 +460,7 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
         </div>
       ) : (
         <span style={{ color: "#475569", fontSize: 13 }}>
-          Inspect a live target to generate a session artifact preview.
+          Inspect a live target or load a saved session to generate a session artifact preview.
         </span>
       )}
     </section>

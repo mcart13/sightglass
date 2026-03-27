@@ -56,12 +56,45 @@ describe("critique engine", () => {
 
     expect(report.scope).toBe("page");
     expect(report.findings.length).toBeGreaterThan(2);
-    expect(report.findings[0]?.severity).toBe("important");
+    expect(["critical", "important"]).toContain(report.findings[0]?.severity);
     expect(report.groupedFindings["motion-performance"]?.length).toBeGreaterThan(0);
     expect(report.groupedFindings["visual-design"]?.length).toBeGreaterThan(0);
     expect(Object.keys(report.groupedFindings)).toEqual(
       expect.arrayContaining([...CRITIQUE_CATEGORIES]),
     );
+  });
+
+  it("reads computed motion styles and escaped utility classes", () => {
+    const document = createDocument(`
+      <style>
+        .hover\\:bg-brand {
+          transition-property: opacity, width;
+          transition-duration: 120ms, 480ms;
+        }
+      </style>
+      <main data-route="/playground/landing">
+        <section data-testid="hero-section" class="card-grid">
+          <div class="card"><button class="cta card-action hover:bg-brand">Start</button></div>
+          <div class="card"><button data-testid="selected-target" class="cta card-action hover:bg-brand">Try it</button></div>
+          <div class="card"><button class="cta card-action hover:bg-brand">Compare</button></div>
+        </section>
+      </main>
+    `);
+    const selectedElement = document.querySelector(
+      "[data-testid='selected-target']",
+    ) as Element;
+
+    const report = runCritique({
+      document,
+      selectedElement,
+      scope: "page",
+      perspective: "emil",
+      target: createAnchor(),
+    });
+
+    expect(report.context.motionSignals.durationMs).toBe(480);
+    expect(report.context.motionSignals.layoutAffectingProperties).toContain("width");
+    expect(report.context.matchingActionCount).toBe(3);
   });
 
   it("reweights findings by perspective and context", () => {

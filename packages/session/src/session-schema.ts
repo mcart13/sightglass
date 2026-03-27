@@ -143,6 +143,7 @@ const isReviewDraftSnapshotValue = (
   isNullableString(value.selectedFindingId) &&
   isNullableString(value.selectedDirectionId) &&
   isRecord(value.motionValues) &&
+  !Array.isArray(value.motionValues) &&
   Object.values(value.motionValues).every(isFiniteNumber);
 
 const isManifestTarget = (value: unknown): boolean =>

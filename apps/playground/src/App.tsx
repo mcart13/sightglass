@@ -415,11 +415,17 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
   useEffect(() => {
     let cancelled = false;
 
-    void createIndexedDbSessionStore().then((sessionStore) => {
-      if (!cancelled) {
-        setStore(sessionStore);
-      }
-    });
+    void createIndexedDbSessionStore()
+      .then((sessionStore) => {
+        if (!cancelled) {
+          setStore(sessionStore);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStatusText("Local session storage failed to initialize.");
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -438,25 +444,29 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
       return;
     }
 
-    await controller.apply(
-      createSessionTransaction({
-        id: `${semanticKind}-${Date.now()}`,
-        scope,
-        targets: [selectedAnchor],
-        operations: [
-          createEditOperation({
-            id: `${semanticKind}-operation-${property}`,
-            property,
-            before: readOperationBefore(session, property),
-            after,
-            semanticKind,
-          }),
-        ],
-        createdAt: new Date().toISOString(),
-      }),
-    );
+    try {
+      await controller.apply(
+        createSessionTransaction({
+          id: `${semanticKind}-${Date.now()}`,
+          scope,
+          targets: [selectedAnchor],
+          operations: [
+            createEditOperation({
+              id: `${semanticKind}-operation-${property}`,
+              property,
+              before: readOperationBefore(session, property),
+              after,
+              semanticKind,
+            }),
+          ],
+          createdAt: new Date().toISOString(),
+        }),
+      );
 
-    setStatusText(label);
+      setStatusText(label);
+    } catch {
+      setStatusText("Failed to apply the requested edit.");
+    }
   };
 
   const handleExportManifest = () => {
@@ -477,43 +487,55 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
       return;
     }
 
-    await store.save(latestRecord);
-    setStatusText(`Saved ${latestRecord.name} locally.`);
+    try {
+      await store.save(latestRecord);
+      setStatusText(`Saved ${latestRecord.name} locally.`);
+    } catch {
+      setStatusText("Failed to save the local session.");
+    }
   };
 
   const handleRestoreLatest = async () => {
-    if (!store) {
-      setStatusText("Local session storage is still initializing.");
-      return;
+    try {
+      if (!store) {
+        setStatusText("Local session storage is still initializing.");
+        return;
+      }
+
+      const latest = (await store.list())[0];
+
+      if (!latest) {
+        setStatusText("No saved local review session is available yet.");
+        return;
+      }
+
+      while (controller.getSnapshot().history.canUndo) {
+        await controller.undo();
+      }
+
+      for (const transaction of latest.manifest.transactions) {
+        await controller.apply(transaction);
+      }
+
+      reviewDraftCommands.hydrateReviewDraft(latest.reviewDraft);
+      inspectAnchor(controller, latest.manifest.targets[0]?.anchor.selector ?? null);
+      setManifestText(JSON.stringify(latest.manifest, null, 2));
+      setStatusText(`Restored ${latest.name} from local session storage.`);
+    } catch {
+      setStatusText("Failed to restore the latest local session.");
     }
-
-    const latest = (await store.list())[0];
-
-    if (!latest) {
-      setStatusText("No saved local review session is available yet.");
-      return;
-    }
-
-    while (controller.getSnapshot().history.canUndo) {
-      await controller.undo();
-    }
-
-    for (const transaction of latest.manifest.transactions) {
-      await controller.apply(transaction);
-    }
-
-    reviewDraftCommands.hydrateReviewDraft(latest.reviewDraft);
-    inspectAnchor(controller, latest.manifest.targets[0]?.anchor.selector ?? null);
-    setManifestText(JSON.stringify(latest.manifest, null, 2));
-    setStatusText(`Restored ${latest.name} from local session storage.`);
   };
 
   const handleReset = async () => {
-    while (controller.getSnapshot().history.canUndo) {
-      await controller.undo();
-    }
+    try {
+      while (controller.getSnapshot().history.canUndo) {
+        await controller.undo();
+      }
 
-    setStatusText("Reverted the live preview back to the baseline fixture.");
+      setStatusText("Reverted the live preview back to the baseline fixture.");
+    } catch {
+      setStatusText("Failed to reset the live preview.");
+    }
   };
 
   const reviewSummary =

@@ -21,6 +21,16 @@ const INTERACTIVE_SELECTOR = [
   "[role='link']",
 ].join(",");
 
+const LAYOUT_AFFECTING_PROPERTIES = new Set([
+  "all",
+  "width",
+  "height",
+  "top",
+  "left",
+  "right",
+  "bottom",
+]);
+
 const resolveScopeElement = (
   document: Document,
   selectedElement: Element,
@@ -61,44 +71,62 @@ const parseDurationToken = (value: string): number => {
   return match[2] === "ms" ? duration : duration * 1000;
 };
 
-const readTransitionDuration = (element: Element): number => {
-  const style = (element as HTMLElement).style;
-  const duration = style.transitionDuration
+const resolveStyles = (element: Element): CSSStyleDeclaration => {
+  const view = element.ownerDocument.defaultView;
+
+  if (view) {
+    return view.getComputedStyle(element);
+  }
+
+  return (element as HTMLElement).style;
+};
+
+const readDurationList = (value: string): number =>
+  value
     .split(",")
-    .map((token) => token.trim())
-    .find(Boolean);
+    .map((token) => parseDurationToken(token))
+    .reduce((maxDuration, duration) => Math.max(maxDuration, duration), 0);
 
-  if (duration) {
-    const parsedDuration = parseDurationToken(duration);
+const readTransitionDuration = (element: Element): number => {
+  const styles = resolveStyles(element);
+  const duration = readDurationList(styles.transitionDuration);
 
-    if (parsedDuration > 0) {
-      return parsedDuration;
-    }
+  if (duration > 0) {
+    return duration;
   }
 
-  const transition = style.transition || "";
-  const match = transition.match(/(\d+(?:\.\d+)?)(ms|s)/);
+  const inlineTransition = (element as HTMLElement).style.transition;
+  const durationTokens = inlineTransition.match(/\d+(?:\.\d+)?(?:ms|s)/g) ?? [];
 
-  if (!match) {
-    return 0;
+  return durationTokens.reduce(
+    (maxDuration, token) => Math.max(maxDuration, parseDurationToken(token)),
+    0,
+  );
+};
+
+const readTransitionProperties = (element: Element): readonly string[] => {
+  const computedProperties = resolveStyles(element).transitionProperty
+    .split(",")
+    .map((property) => property.trim())
+    .filter((property) => property.length > 0 && property !== "none");
+
+  if (computedProperties.length > 0) {
+    return computedProperties;
   }
 
-  return match[2] === "ms"
-    ? Number.parseFloat(match[1])
-    : Number.parseFloat(match[1]) * 1000;
+  return (element as HTMLElement).style.transition
+    .split(",")
+    .map((chunk) => chunk.trim().split(/\s+/)[0] ?? "")
+    .filter((property) => property.length > 0 && property !== "none");
 };
 
 const readMotionSignals = (
   document: Document,
   selectedElement: Element,
 ): MotionSignals => {
-  const transition = (selectedElement as HTMLElement).style.transition || "";
-  const properties = transition
-    .split(",")
-    .flatMap((chunk) => chunk.split(/\s+/))
-    .filter(Boolean);
+  const properties = readTransitionProperties(selectedElement);
   const layoutAffectingProperties = properties.filter((property) =>
-    ["all", "width", "height", "top", "left", "right", "bottom"].includes(property),
+    LAYOUT_AFFECTING_PROPERTIES.has(property),
   );
 
   return Object.freeze({
@@ -115,8 +143,11 @@ const resolveMatchingActionCount = (
   document: Document,
   selectedElement: Element,
 ): number => {
+  const escapeClassName =
+    document.defaultView?.CSS?.escape ??
+    ((className: string) => className.replace(/[^a-zA-Z0-9_-]/g, "\\$&"));
   const selector = Array.from(selectedElement.classList)
-    .map((className) => `.${className}`)
+    .map((className) => `.${escapeClassName(className)}`)
     .join("");
 
   if (!selector) {

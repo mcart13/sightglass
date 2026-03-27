@@ -33,6 +33,15 @@ const sectionLabelStyle: CSSProperties = {
   color: "#64748b",
 };
 
+const scrollAreaStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+  marginTop: 18,
+  maxHeight: "calc(100vh - 248px)",
+  overflowY: "auto",
+  paddingRight: 4,
+};
+
 const detailRowStyle: CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
@@ -87,7 +96,7 @@ export const EditorPanel = () => {
         </p>
       </div>
 
-      <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
+      <div style={scrollAreaStyle}>
         <div style={detailRowStyle}>
           <span style={sectionLabelStyle}>Target</span>
           <strong>{primaryAnchor?.selector ?? "No target selected"}</strong>

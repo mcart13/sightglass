@@ -14,6 +14,17 @@ interface ExplorePanelProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
 }
 
+const SECTION_SELECTOR = [
+  "section",
+  "article",
+  "aside",
+  "form",
+  "main",
+  "header",
+  "footer",
+  "nav",
+].join(",");
+
 const sectionStyle: CSSProperties = {
   display: "grid",
   gap: 10,
@@ -53,14 +64,26 @@ export const ExplorePanel = ({ session }: ExplorePanelProps) => {
       return null;
     }
 
+    const scopedElement =
+      reviewDraft.critiqueScope === "page"
+        ? selectedElement.ownerDocument.body
+        : reviewDraft.critiqueScope === "section"
+          ? selectedElement.closest(SECTION_SELECTOR) ?? selectedElement
+          : selectedElement;
+
     return runCritique({
       document: selectedElement.ownerDocument,
-      selectedElement,
-      perspective: "jakub",
-      scope: "page",
+      selectedElement: scopedElement,
+      perspective: reviewDraft.critiquePerspective,
+      scope: reviewDraft.critiqueScope,
       target,
     });
-  }, [selectedElement, target]);
+  }, [
+    reviewDraft.critiquePerspective,
+    reviewDraft.critiqueScope,
+    selectedElement,
+    target,
+  ]);
   const directions = useMemo(
     () => (report ? generateDesignDirections(report) : []),
     [report],

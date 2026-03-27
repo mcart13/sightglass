@@ -203,6 +203,7 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
                   </span>
                   <button
                     type="button"
+                    aria-pressed={reviewDraft.selectedFindingId === finding.id}
                     style={controlButtonStyle(reviewDraft.selectedFindingId === finding.id)}
                     onClick={() =>
                       reviewDraftCommands.setSelectedFindingId(finding.id)
