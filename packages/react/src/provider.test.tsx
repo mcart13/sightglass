@@ -531,6 +531,48 @@ describe("@sightglass/react provider", () => {
     harness.cleanup();
   });
 
+  it("persists and exports a local session artifact from the review panel", async () => {
+    const harness = renderHarness();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-testid='inspect']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      harness.container
+        .querySelector("[data-session-save]")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      harness.container
+        .querySelector("[data-session-export]")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(harness.container.textContent).toContain("Session review");
+    expect(harness.container.textContent).toContain("Saved Current review.");
+    expect(
+      harness.container.querySelector("[data-session-review-artifact]"),
+    ).not.toBeNull();
+    expect(
+      (
+        harness.container.querySelector(
+          "[data-session-payload]",
+        ) as HTMLTextAreaElement | null
+      )?.value,
+    ).toContain("\"sessionId\":");
+
+    harness.cleanup();
+  });
+
   it("passes mutation history state straight through to editing controls", () => {
     const controller = createController(
       createSnapshot({

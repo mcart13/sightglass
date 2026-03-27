@@ -8,6 +8,7 @@ import { CritiquePanel } from "./CritiquePanel";
 import { ExplorePanel } from "./ExplorePanel";
 import { MotionLab } from "./MotionLab";
 import { SemanticInspector } from "./SemanticInspector";
+import { SessionPanel } from "./SessionPanel";
 
 const panelStyle: CSSProperties = {
   position: "fixed",
@@ -121,6 +122,7 @@ export const EditorPanel = () => {
       <CritiquePanel session={session} />
       <ExplorePanel session={session} />
       <MotionLab session={session} />
+      <SessionPanel session={session} />
     </aside>
   );
 };

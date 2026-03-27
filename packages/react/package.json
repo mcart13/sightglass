@@ -11,6 +11,8 @@
   "dependencies": {
     "@sightglass/core": "workspace:*",
     "@sightglass/critique": "workspace:*",
+    "@sightglass/export": "workspace:*",
+    "@sightglass/session": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
 import {
   CRITIQUE_CATEGORIES,
   runCritique,
@@ -6,6 +6,10 @@ import {
   type CritiqueScope,
 } from "@sightglass/critique";
 import type { SightglassSessionSnapshot } from "@sightglass/core";
+import {
+  useSightglassReviewDraftCommands,
+  useSightglassReviewDraftState,
+} from "../use-sightglass";
 
 const sectionStyle: CSSProperties = {
   display: "grid",
@@ -76,9 +80,8 @@ const resolveScopeElement = (
 };
 
 export const CritiquePanel = ({ session }: CritiquePanelProps) => {
-  const [scope, setScope] = useState<CritiqueScope>("node");
-  const [perspective, setPerspective] = useState<CritiquePerspective>("emil");
-  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
+  const reviewDraft = useSightglassReviewDraftState();
+  const reviewDraftCommands = useSightglassReviewDraftCommands();
   const target = session.selection.best?.anchors[0] ?? null;
   const selectedElement = session.selectedElement;
   const report = useMemo(() => {
@@ -88,12 +91,15 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
 
     return runCritique({
       document: selectedElement.ownerDocument,
-      selectedElement: resolveScopeElement(selectedElement, scope),
-      perspective,
-      scope,
+      selectedElement: resolveScopeElement(
+        selectedElement,
+        reviewDraft.critiqueScope,
+      ),
+      perspective: reviewDraft.critiquePerspective,
+      scope: reviewDraft.critiqueScope,
       target,
     });
-  }, [perspective, scope, selectedElement, target]);
+  }, [reviewDraft.critiquePerspective, reviewDraft.critiqueScope, selectedElement, target]);
 
   if (!selectedElement || !target || !report) {
     return (
@@ -130,9 +136,9 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
               key={scopeOption}
               type="button"
               data-critique-scope={scopeOption}
-              aria-pressed={scope === scopeOption}
-              style={controlButtonStyle(scope === scopeOption)}
-              onClick={() => setScope(scopeOption)}
+              aria-pressed={reviewDraft.critiqueScope === scopeOption}
+              style={controlButtonStyle(reviewDraft.critiqueScope === scopeOption)}
+              onClick={() => reviewDraftCommands.setCritiqueScope(scopeOption)}
             >
               {scopeOption === "node"
                 ? "Selected element"
@@ -152,9 +158,11 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
               key={perspectiveOption}
               type="button"
               data-critique-perspective={perspectiveOption}
-              aria-pressed={perspective === perspectiveOption}
-              style={controlButtonStyle(perspective === perspectiveOption)}
-              onClick={() => setPerspective(perspectiveOption)}
+              aria-pressed={reviewDraft.critiquePerspective === perspectiveOption}
+              style={controlButtonStyle(reviewDraft.critiquePerspective === perspectiveOption)}
+              onClick={() =>
+                reviewDraftCommands.setCritiquePerspective(perspectiveOption)
+              }
             >
               {perspectiveOption}
             </button>
@@ -162,11 +170,11 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
         </div>
       </div>
 
-      {selectedFindingId ? (
+      {reviewDraft.selectedFindingId ? (
         <div style={findingCardStyle}>
           <strong>Explore handoff ready</strong>
           <span style={{ color: "#475569", fontSize: 13 }}>
-            Selected finding: {selectedFindingId}
+            Selected finding: {reviewDraft.selectedFindingId}
           </span>
         </div>
       ) : null}
@@ -193,8 +201,10 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
                   </span>
                   <button
                     type="button"
-                    style={controlButtonStyle(selectedFindingId === finding.id)}
-                    onClick={() => setSelectedFindingId(finding.id)}
+                    style={controlButtonStyle(reviewDraft.selectedFindingId === finding.id)}
+                    onClick={() =>
+                      reviewDraftCommands.setSelectedFindingId(finding.id)
+                    }
                   >
                     Turn this into an edit plan
                   </button>

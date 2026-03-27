@@ -1,10 +1,14 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
 import {
   buildExploreEditPlan,
   generateDesignDirections,
   runCritique,
 } from "@sightglass/critique";
 import type { SightglassSessionSnapshot } from "@sightglass/core";
+import {
+  useSightglassReviewDraftCommands,
+  useSightglassReviewDraftState,
+} from "../use-sightglass";
 
 interface ExplorePanelProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
@@ -40,6 +44,8 @@ const optionStyle = (active: boolean): CSSProperties => ({
 });
 
 export const ExplorePanel = ({ session }: ExplorePanelProps) => {
+  const reviewDraft = useSightglassReviewDraftState();
+  const reviewDraftCommands = useSightglassReviewDraftCommands();
   const target = session.selection.best?.anchors[0] ?? null;
   const selectedElement = session.selectedElement;
   const report = useMemo(() => {
@@ -59,9 +65,8 @@ export const ExplorePanel = ({ session }: ExplorePanelProps) => {
     () => (report ? generateDesignDirections(report) : []),
     [report],
   );
-  const [selectedDirectionId, setSelectedDirectionId] = useState<string | null>(null);
   const selectedDirection =
-    directions.find((direction) => direction.id === selectedDirectionId) ??
+    directions.find((direction) => direction.id === reviewDraft.selectedDirectionId) ??
     directions[0] ??
     null;
   const editPlan = useMemo(
@@ -91,7 +96,7 @@ export const ExplorePanel = ({ session }: ExplorePanelProps) => {
             type="button"
             data-direction-id={direction.id}
             style={optionStyle(selectedDirection?.id === direction.id)}
-            onClick={() => setSelectedDirectionId(direction.id)}
+            onClick={() => reviewDraftCommands.setSelectedDirectionId(direction.id)}
           >
             <strong>{direction.title}</strong>
             <span style={{ color: "#475569", fontSize: 13 }}>

@@ -1,16 +1,14 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useMemo, type CSSProperties } from "react";
 import {
   buildMotionStoryboard,
   createMotionTuningSchema,
   runCritique,
-  type MotionTuningControlId,
 } from "@sightglass/critique";
 import type { SightglassSessionSnapshot } from "@sightglass/core";
+import {
+  useSightglassReviewDraftCommands,
+  useSightglassReviewDraftState,
+} from "../use-sightglass";
 
 interface MotionLabProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
@@ -42,6 +40,8 @@ const cardStyle: CSSProperties = {
 };
 
 export const MotionLab = ({ session }: MotionLabProps) => {
+  const reviewDraft = useSightglassReviewDraftState();
+  const reviewDraftCommands = useSightglassReviewDraftCommands();
   const target = session.selection.best?.anchors[0] ?? null;
   const selectedElement = session.selectedElement;
   const critiqueReport = useMemo(() => {
@@ -65,20 +65,6 @@ export const MotionLab = ({ session }: MotionLabProps) => {
     () => (critiqueReport ? createMotionTuningSchema(critiqueReport.context) : null),
     [critiqueReport],
   );
-  const [values, setValues] = useState<Partial<Record<MotionTuningControlId, number>>>({});
-
-  useEffect(() => {
-    if (!tuningSchema) {
-      setValues({});
-      return;
-    }
-
-    setValues(
-      Object.fromEntries(
-        tuningSchema.controls.map((control) => [control.id, control.recommendedValue]),
-      ),
-    );
-  }, [tuningSchema]);
 
   if (!selectedElement || !target || !storyboard || !tuningSchema) {
     return (
@@ -123,7 +109,7 @@ export const MotionLab = ({ session }: MotionLabProps) => {
           <label key={control.id} style={{ display: "grid", gap: 6 }}>
             <strong>{control.label}</strong>
             <span style={{ color: "#475569", fontSize: 13 }}>
-              {values[control.id] ?? control.recommendedValue}
+              {reviewDraft.motionValues[control.id] ?? control.recommendedValue}
               {control.unit} · {control.guidance}
             </span>
             <input
@@ -132,12 +118,12 @@ export const MotionLab = ({ session }: MotionLabProps) => {
               min={control.min}
               max={control.max}
               step={control.step}
-              value={values[control.id] ?? control.recommendedValue}
+              value={reviewDraft.motionValues[control.id] ?? control.recommendedValue}
               onChange={(event) =>
-                setValues((current) => ({
-                  ...current,
-                  [control.id]: Number(event.currentTarget.value),
-                }))
+                reviewDraftCommands.setMotionValue(
+                  control.id,
+                  Number(event.currentTarget.value),
+                )
               }
             />
           </label>
