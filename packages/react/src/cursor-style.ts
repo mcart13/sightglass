@@ -8,7 +8,8 @@ body * { cursor: crosshair !important; }
 [data-sightglass-chrome], [data-sightglass-chrome] * { cursor: default !important; }
 [data-sightglass-chrome] button { cursor: pointer !important; }
 [data-sightglass-chrome] input[type="range"] { cursor: ew-resize !important; }
-[contenteditable] { cursor: text !important; caret-color: #2563eb !important; outline: none !important; }
+[contenteditable] { cursor: text !important; caret-color: #2563eb !important; }
+[contenteditable]:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 `.trim();
 
 // Per-document reference counting so multiple providers or iframes work correctly

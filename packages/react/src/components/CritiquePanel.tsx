@@ -134,6 +134,7 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
             <button
               key={finding.id}
               type="button"
+              aria-pressed={reviewDraft.selectedFindingId === finding.id}
               style={{
                 ...(reviewDraft.selectedFindingId === finding.id
                   ? panelButtonActiveStyle

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import {
   useSightglassCommands,
   useSightglassSessionState,
@@ -8,6 +8,7 @@ export const InlineTextEditor = () => {
   const session = useSightglassSessionState();
   const commands = useSightglassCommands();
   const { selectedElement, isEditingText } = session;
+  const committingRef = useRef(false);
 
   useEffect(() => {
     if (!selectedElement || isEditingText) return;
@@ -29,6 +30,7 @@ export const InlineTextEditor = () => {
         commands.cancelTextEdit();
       } else if (ke.key === "Enter" && !ke.shiftKey) {
         ke.preventDefault();
+        committingRef.current = true;
         commands.commitTextEdit();
       }
     },
@@ -36,6 +38,10 @@ export const InlineTextEditor = () => {
   );
 
   const handleBlur = useCallback(() => {
+    if (committingRef.current) {
+      committingRef.current = false;
+      return;
+    }
     commands.commitTextEdit();
   }, [commands]);
 

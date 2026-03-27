@@ -50,7 +50,18 @@ export const SelectionOverlay = () => {
         return;
       }
       const r = selectedElement.getBoundingClientRect();
-      setRect(r);
+      setRect((prev) => {
+        if (
+          prev &&
+          prev.top === r.top &&
+          prev.left === r.left &&
+          prev.width === r.width &&
+          prev.height === r.height
+        ) {
+          return prev;
+        }
+        return r;
+      });
       rawTop.set(r.top - SELECTION_PADDING);
       rawLeft.set(r.left - SELECTION_PADDING);
       rawWidth.set(r.width + SELECTION_PADDING * 2);

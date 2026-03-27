@@ -233,182 +233,207 @@ export const EditorPanel = () => {
   const scopeCount = session.selection.similar.length + (primaryAnchor ? 1 : 0);
   const changeCount = session.history.applied.length;
 
-  // Collapsed: single 44x44 button
-  if (!overlay.panelOpen) {
-    return (
-      <motion.button
-        type="button"
-        data-sightglass-chrome="true"
-        style={collapsedStyle}
-        onClick={() => {
-          commands.setPanelOpen(true);
-          commands.setActive(true);
-        }}
-        initial={{ scale: 0.5, opacity: 0, filter: "blur(8px)" }}
-        animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ type: "spring", visualDuration: 0.2, bounce: 0.15 }}
-      >
-        <WandIcon />
-      </motion.button>
-    );
-  }
-
   const showPanel = session.active;
 
   return (
     <div data-sightglass-chrome="true">
       <InlineTextEditor />
-      {/* Toolbar bar - always visible when open */}
-      <motion.div
-        style={toolbarStyle}
-        initial={{ scale: 0.9, opacity: 0, filter: "blur(8px)" }}
-        animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
-        transition={{ type: "spring", visualDuration: 0.25, bounce: 0.1 }}
-      >
-        <button
-          type="button"
-          style={copyBtn}
-          title="Copy edits"
-          onClick={() => {
-            const applied = session.history.applied;
-            if (applied.length === 0) return;
-            const lines = applied.map((state) => {
-              const base = `${state.property}: ${state.after}`;
-              if (!overlay.tailwindMode) return base;
-              const tw = cssToTailwind(state.property, state.after);
-              return `${base}  \u2192  ${tw}`;
-            });
-            navigator.clipboard.writeText(lines.join("\n"));
-          }}
-        >
-          <ClipboardIcon />
-          <span>Copy Edits</span>
-          {changeCount > 0 && (
-            <span
-              style={{
-                padding: "0 2px",
-                borderRadius: 2,
-                background: "#242424",
-                fontSize: 8,
-                fontWeight: 600,
-                lineHeight: "8px",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {changeCount}
-            </span>
-          )}
-        </button>
-        <button
-          type="button"
-          style={{
-            ...barBtn,
-            ...(overlay.tailwindMode
-              ? { background: "rgba(59,130,246,0.2)", color: "#60a5fa" }
-              : {}),
-          }}
-          onClick={() => commands.setTailwindMode(!overlay.tailwindMode)}
-          title={
-            overlay.tailwindMode ? "Tailwind mode on" : "Tailwind mode off"
-          }
-        >
-          <GearIcon />
-        </button>
-        <div style={divider} />
-        <button
-          type="button"
-          style={barBtn}
-          onClick={() => {
-            commands.setPanelOpen(false);
-            commands.setActive(false);
-          }}
-          title="Close"
-        >
-          <CloseIcon />
-        </button>
-      </motion.div>
-
-      {/* Panel - below toolbar, only when element selected */}
-      <AnimatePresence>
-        {showPanel && (
-          <motion.aside
-            aria-label="Sightglass inspector"
-            style={panelShellStyle}
-            initial={{ opacity: 0, y: -8, filter: "blur(4px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
-            transition={{ type: "spring", visualDuration: 0.25, bounce: 0.05 }}
+      <AnimatePresence mode="wait">
+        {!overlay.panelOpen ? (
+          <motion.button
+            key="collapsed"
+            type="button"
+            data-sightglass-chrome="true"
+            style={collapsedStyle}
+            onClick={() => {
+              commands.setPanelOpen(true);
+              commands.setActive(true);
+            }}
+            initial={{ scale: 0.5, opacity: 0, filter: "blur(8px)" }}
+            animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+            exit={{ scale: 0.5, opacity: 0, filter: "blur(8px)" }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", visualDuration: 0.2, bounce: 0.15 }}
+            aria-label="Open inspector"
+            title="Open inspector"
           >
+            <WandIcon />
+          </motion.button>
+        ) : (
+          <motion.div
+            key="expanded"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", visualDuration: 0.2, bounce: 0.1 }}
+          >
+            {/* Toolbar bar - always visible when open */}
             <motion.div
-              style={panelTabRowStyle}
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: {},
-                visible: { transition: { staggerChildren: 0.03 } },
+              style={toolbarStyle}
+              initial={{ scale: 0.9, opacity: 0, filter: "blur(8px)" }}
+              animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+              transition={{
+                type: "spring",
+                visualDuration: 0.25,
+                bounce: 0.1,
               }}
             >
-              {TABS.map((tab) => (
-                <motion.button
-                  key={tab}
-                  type="button"
-                  style={panelTabStyle(activeTab === tab)}
-                  onClick={() => setActiveTab(tab)}
-                  variants={{
-                    hidden: { opacity: 0, scale: 0.8 },
-                    visible: { opacity: 1, scale: 1 },
-                  }}
-                  transition={{
-                    type: "spring",
-                    visualDuration: 0.15,
-                    bounce: 0.1,
-                  }}
-                >
-                  {tab}
-                </motion.button>
-              ))}
+              <button
+                type="button"
+                style={copyBtn}
+                title="Copy edits"
+                onClick={() => {
+                  const applied = session.history.applied;
+                  if (applied.length === 0) return;
+                  const lines = applied.map((state) => {
+                    const base = `${state.property}: ${state.after}`;
+                    if (!overlay.tailwindMode) return base;
+                    const tw = cssToTailwind(state.property, state.after);
+                    return `${base}  \u2192  ${tw}`;
+                  });
+                  navigator.clipboard.writeText(lines.join("\n"));
+                }}
+              >
+                <ClipboardIcon />
+                <span>Copy Edits</span>
+                {changeCount > 0 && (
+                  <span
+                    style={{
+                      padding: "0 2px",
+                      borderRadius: 2,
+                      background: "#242424",
+                      fontSize: 8,
+                      fontWeight: 600,
+                      lineHeight: "8px",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {changeCount}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                style={{
+                  ...barBtn,
+                  ...(overlay.tailwindMode
+                    ? { background: "rgba(59,130,246,0.2)", color: "#60a5fa" }
+                    : {}),
+                }}
+                onClick={() => commands.setTailwindMode(!overlay.tailwindMode)}
+                title={
+                  overlay.tailwindMode
+                    ? "Tailwind mode on"
+                    : "Tailwind mode off"
+                }
+              >
+                <GearIcon />
+              </button>
+              <div style={divider} />
+              <button
+                type="button"
+                style={barBtn}
+                onClick={() => {
+                  commands.setPanelOpen(false);
+                  commands.setActive(false);
+                }}
+                title="Close"
+              >
+                <CloseIcon />
+              </button>
             </motion.div>
 
-            <div style={panelScrollStyle}>
-              <div style={panelSectionStyle}>
-                <span style={panelSectionLabelStyle}>Selection</span>
-                <div style={panelRowStyle}>
-                  <span style={panelRowLabelStyle}>Target</span>
-                  <span style={{ ...panelRowValueStyle, maxWidth: 150 }}>
-                    {primaryAnchor?.selector ?? "Click an element"}
-                  </span>
-                </div>
-                <div style={panelRowStyle}>
-                  <span style={panelRowLabelStyle}>Role</span>
-                  <span style={panelRowValueStyle}>
-                    {primaryAnchor?.role ?? "—"}
-                  </span>
-                </div>
-                <div style={panelRowStyle}>
-                  <span style={panelRowLabelStyle}>Scope</span>
-                  <span style={panelRowValueStyle}>
-                    {scopeCount <= 1 ? "—" : `${scopeCount} candidates`}
-                  </span>
-                </div>
-              </div>
+            {/* Panel - below toolbar, only when element selected */}
+            <AnimatePresence>
+              {showPanel && (
+                <motion.aside
+                  aria-label="Sightglass inspector"
+                  style={panelShellStyle}
+                  initial={{ opacity: 0, y: -8, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
+                  transition={{
+                    type: "spring",
+                    visualDuration: 0.25,
+                    bounce: 0.05,
+                  }}
+                >
+                  <motion.div
+                    style={panelTabRowStyle}
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                      hidden: {},
+                      visible: { transition: { staggerChildren: 0.03 } },
+                    }}
+                  >
+                    {TABS.map((tab) => (
+                      <motion.button
+                        key={tab}
+                        type="button"
+                        style={panelTabStyle(activeTab === tab)}
+                        onClick={() => setActiveTab(tab)}
+                        variants={{
+                          hidden: { opacity: 0, scale: 0.8 },
+                          visible: { opacity: 1, scale: 1 },
+                        }}
+                        transition={{
+                          type: "spring",
+                          visualDuration: 0.15,
+                          bounce: 0.1,
+                        }}
+                      >
+                        {tab}
+                      </motion.button>
+                    ))}
+                  </motion.div>
 
-              {activeTab === "Style" && (
-                <>
-                  <PropertyEditor session={session} commands={commands} />
-                  <SemanticInspector
-                    commands={commands}
-                    overlay={overlay}
-                    session={session}
-                  />
-                </>
+                  <div style={panelScrollStyle}>
+                    <div style={panelSectionStyle}>
+                      <span style={panelSectionLabelStyle}>Selection</span>
+                      <div style={panelRowStyle}>
+                        <span style={panelRowLabelStyle}>Target</span>
+                        <span style={{ ...panelRowValueStyle, maxWidth: 150 }}>
+                          {primaryAnchor?.selector ?? "Click an element"}
+                        </span>
+                      </div>
+                      <div style={panelRowStyle}>
+                        <span style={panelRowLabelStyle}>Role</span>
+                        <span style={panelRowValueStyle}>
+                          {primaryAnchor?.role ?? "—"}
+                        </span>
+                      </div>
+                      <div style={panelRowStyle}>
+                        <span style={panelRowLabelStyle}>Scope</span>
+                        <span style={panelRowValueStyle}>
+                          {scopeCount <= 1 ? "—" : `${scopeCount} candidates`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {activeTab === "Style" && (
+                      <>
+                        <PropertyEditor session={session} commands={commands} />
+                        <SemanticInspector
+                          commands={commands}
+                          overlay={overlay}
+                          session={session}
+                        />
+                      </>
+                    )}
+                    {activeTab === "Issues" && (
+                      <CritiquePanel session={session} />
+                    )}
+                    {activeTab === "Explore" && (
+                      <ExplorePanel session={session} />
+                    )}
+                    {activeTab === "Motion" && <MotionLab session={session} />}
+                  </div>
+                </motion.aside>
               )}
-              {activeTab === "Issues" && <CritiquePanel session={session} />}
-              {activeTab === "Explore" && <ExplorePanel session={session} />}
-              {activeTab === "Motion" && <MotionLab session={session} />}
-            </div>
-          </motion.aside>
+            </AnimatePresence>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

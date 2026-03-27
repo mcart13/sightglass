@@ -139,7 +139,9 @@ export const SightglassProvider = ({
   }, [resolvedController]);
 
   const selectedDoc =
-    sessionState.selectedElement?.ownerDocument ?? globalThis.document;
+    sessionState.selectedElement?.ownerDocument ??
+    document ??
+    globalThis.document;
   useEffect(() => {
     if (!sessionState.active) return;
 

@@ -85,6 +85,8 @@ export function AlignmentControl({
             type="button"
             style={buttonStyle(value === opt)}
             title={LABELS[opt]}
+            aria-label={LABELS[opt]}
+            aria-pressed={value === opt}
             onClick={() => onChange(opt)}
           >
             {ICONS[opt]}
