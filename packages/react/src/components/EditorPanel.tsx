@@ -127,17 +127,17 @@ export const EditorPanel = () => {
           <span style={sectionLabelStyle}>Preview mode</span>
           <span>{overlay.hoveredScope ?? "single"}</span>
         </div>
-      </div>
 
-      <SemanticInspector
-        commands={commands}
-        overlay={overlay}
-        session={session}
-      />
-      <CritiquePanel session={session} />
-      <ExplorePanel session={session} />
-      <MotionLab session={session} />
-      <SessionPanel session={session} />
+        <SemanticInspector
+          commands={commands}
+          overlay={overlay}
+          session={session}
+        />
+        <CritiquePanel session={session} />
+        <ExplorePanel session={session} />
+        <MotionLab session={session} />
+        <SessionPanel session={session} />
+      </div>
     </aside>
   );
 };
