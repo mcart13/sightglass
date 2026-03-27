@@ -9,6 +9,7 @@ import {
 } from "./panel-styles";
 import {
   AlignmentControl,
+  type AlignValue,
   BoxSpacing,
   ColorPicker,
   Slider,
@@ -292,13 +293,13 @@ export function PropertyEditor({ session, commands }: PropertyEditorProps) {
           <span style={panelSectionLabelStyle}>Flex</span>
           <AlignmentControl
             label="Align Items"
-            value={computed.alignItems}
+            value={computed.alignItems as AlignValue}
             options={["flex-start", "center", "flex-end", "stretch"]}
             onChange={(v) => apply("align-items", v)}
           />
           <AlignmentControl
             label="Justify Content"
-            value={computed.justifyContent}
+            value={computed.justifyContent as AlignValue}
             options={["flex-start", "center", "flex-end", "space-between"]}
             onChange={(v) => apply("justify-content", v)}
           />

@@ -327,6 +327,8 @@ export const EditorPanel = () => {
                     ? "Tailwind mode on"
                     : "Tailwind mode off"
                 }
+                aria-label="Toggle Tailwind mode"
+                aria-pressed={overlay.tailwindMode}
               >
                 <GearIcon />
               </button>
@@ -339,6 +341,7 @@ export const EditorPanel = () => {
                   commands.setActive(false);
                 }}
                 title="Close"
+                aria-label="Close panel"
               >
                 <CloseIcon />
               </button>
@@ -360,6 +363,7 @@ export const EditorPanel = () => {
                   }}
                 >
                   <motion.div
+                    role="tablist"
                     style={panelTabRowStyle}
                     initial="hidden"
                     animate="visible"
@@ -372,6 +376,11 @@ export const EditorPanel = () => {
                       <motion.button
                         key={tab}
                         type="button"
+                        role="tab"
+                        aria-selected={activeTab === tab}
+                        id={`sg-tab-${tab.toLowerCase()}`}
+                        aria-controls={`sg-panel-${tab.toLowerCase()}`}
+                        tabIndex={activeTab === tab ? 0 : -1}
                         style={panelTabStyle(activeTab === tab)}
                         onClick={() => setActiveTab(tab)}
                         variants={{
@@ -389,7 +398,12 @@ export const EditorPanel = () => {
                     ))}
                   </motion.div>
 
-                  <div style={panelScrollStyle}>
+                  <div
+                    role="tabpanel"
+                    id={`sg-panel-${activeTab.toLowerCase()}`}
+                    aria-labelledby={`sg-tab-${activeTab.toLowerCase()}`}
+                    style={panelScrollStyle}
+                  >
                     <div style={panelSectionStyle}>
                       <span style={panelSectionLabelStyle}>Selection</span>
                       <div style={panelRowStyle}>

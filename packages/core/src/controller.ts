@@ -118,6 +118,7 @@ export const createSightglassController = (
       resolveTargets: createResolveTargets(options.document),
     });
   const textSession = createTextSession({ engine: mutationEngine });
+  let originalContentEditable: string | null = null;
   const listeners = new Set<() => void>();
   let snapshot = createSnapshot({
     history: mutationEngine.snapshot(),
@@ -134,11 +135,20 @@ export const createSightglassController = (
     emit();
   };
 
+  const restoreContentEditable = (target: Element) => {
+    if (originalContentEditable !== null) {
+      target.setAttribute("contenteditable", originalContentEditable);
+    } else {
+      target.removeAttribute("contenteditable");
+    }
+    originalContentEditable = null;
+  };
+
   return {
     destroy() {
       const edit = textSession.current();
       if (edit) {
-        edit.target.removeAttribute("contenteditable");
+        restoreContentEditable(edit.target);
         textSession.cancelTextEdit();
       }
       listeners.clear();
@@ -163,7 +173,7 @@ export const createSightglassController = (
       if (!active) {
         const edit = textSession.current();
         if (edit) {
-          edit.target.removeAttribute("contenteditable");
+          restoreContentEditable(edit.target);
           textSession.cancelTextEdit();
         }
         updateSnapshot({ active, isEditingText: false });
@@ -176,7 +186,7 @@ export const createSightglassController = (
     inspectAtPoint(point) {
       const edit = textSession.current();
       if (edit) {
-        edit.target.removeAttribute("contenteditable");
+        restoreContentEditable(edit.target);
         textSession.cancelTextEdit();
       }
 
@@ -216,6 +226,7 @@ export const createSightglassController = (
       const el = snapshot.selectedElement;
       if (!el || textSession.current()) return;
       const anchor = generateAnchor(el);
+      originalContentEditable = el.getAttribute("contenteditable");
       textSession.startTextEdit({ target: el, anchor });
       el.setAttribute("contenteditable", "plaintext-only");
       if (el instanceof HTMLElement) {
@@ -228,7 +239,7 @@ export const createSightglassController = (
       const edit = textSession.current();
       if (!edit) return;
 
-      edit.target.removeAttribute("contenteditable");
+      restoreContentEditable(edit.target);
       try {
         const history = await textSession.commitTextEdit();
         updateSnapshot({ isEditingText: false, history });
@@ -247,7 +258,7 @@ export const createSightglassController = (
     cancelTextEdit() {
       const edit = textSession.current();
       if (!edit) return;
-      edit.target.removeAttribute("contenteditable");
+      restoreContentEditable(edit.target);
       textSession.cancelTextEdit();
       updateSnapshot({ isEditingText: false });
     },

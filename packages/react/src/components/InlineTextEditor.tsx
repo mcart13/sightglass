@@ -11,7 +11,7 @@ export const InlineTextEditor = () => {
   const committingRef = useRef(false);
 
   useEffect(() => {
-    if (!selectedElement || isEditingText) return;
+    if (!selectedElement || isEditingText || !session.active) return;
     const handleDblClick = (e: Event) => {
       e.preventDefault();
       e.stopPropagation();
@@ -20,10 +20,10 @@ export const InlineTextEditor = () => {
     selectedElement.addEventListener("dblclick", handleDblClick);
     return () =>
       selectedElement.removeEventListener("dblclick", handleDblClick);
-  }, [selectedElement, isEditingText, commands]);
+  }, [selectedElement, isEditingText, session.active, commands]);
 
   const handleKeyDown = useCallback(
-    (e: Event) => {
+    async (e: Event) => {
       const ke = e as KeyboardEvent;
       if (ke.key === "Escape") {
         ke.preventDefault();
@@ -31,7 +31,11 @@ export const InlineTextEditor = () => {
       } else if (ke.key === "Enter" && !ke.shiftKey) {
         ke.preventDefault();
         committingRef.current = true;
-        commands.commitTextEdit();
+        try {
+          await commands.commitTextEdit();
+        } finally {
+          committingRef.current = false;
+        }
       }
     },
     [commands]
@@ -49,7 +53,8 @@ export const InlineTextEditor = () => {
     e.preventDefault();
     const ce = e as ClipboardEvent;
     const text = ce.clipboardData?.getData("text/plain") ?? "";
-    document.execCommand("insertText", false, text);
+    const ownerDoc = (e.currentTarget as Element)?.ownerDocument ?? document;
+    ownerDoc.execCommand("insertText", false, text);
   }, []);
 
   useEffect(() => {

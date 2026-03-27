@@ -5,9 +5,11 @@ const CURSOR_STYLE_ID = "sightglass-cursor-style";
 const CURSOR_CSS = `
 body { cursor: crosshair !important; }
 body * { cursor: crosshair !important; }
-[data-sightglass-chrome], [data-sightglass-chrome] * { cursor: default !important; }
-[data-sightglass-chrome] button { cursor: pointer !important; }
+[data-sightglass-chrome] { cursor: default !important; }
+[data-sightglass-chrome] button, [data-sightglass-chrome] a { cursor: pointer !important; }
+[data-sightglass-chrome] input, [data-sightglass-chrome] textarea, [data-sightglass-chrome] select { cursor: text !important; }
 [data-sightglass-chrome] input[type="range"] { cursor: ew-resize !important; }
+[data-sightglass-chrome] [contenteditable] { cursor: text !important; }
 [contenteditable] { cursor: text !important; caret-color: #2563eb !important; }
 [contenteditable]:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 `.trim();

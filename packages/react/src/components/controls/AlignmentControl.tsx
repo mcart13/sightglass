@@ -11,7 +11,7 @@ export type { AlignValue };
 
 export interface AlignmentControlProps {
   readonly label: string;
-  readonly value: string;
+  readonly value: AlignValue;
   readonly options?: readonly AlignValue[];
   readonly onChange: (value: AlignValue) => void;
 }

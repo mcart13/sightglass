@@ -82,7 +82,7 @@ export { hslToHex };
 
 // --- Validation ---
 
-const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 function isValidHex(s: string): boolean {
   return HEX_RE.test(s);
@@ -215,7 +215,6 @@ export function ColorPicker({
     color: "#e5e5e7",
     fontSize: 13,
     fontFamily: "monospace",
-    outline: "none",
     boxSizing: "border-box",
   };
 
@@ -264,6 +263,7 @@ export function ColorPicker({
               type="button"
               style={resetStyle}
               title="Reset"
+              aria-label="Reset color"
               onClick={onReset}
             >
               ↩
