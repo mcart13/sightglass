@@ -5,6 +5,7 @@ import {
   useCallback,
   type CSSProperties,
 } from "react";
+import { createPortal } from "react-dom";
 import { Slider } from "./Slider";
 
 export interface ColorPickerProps {
@@ -275,56 +276,58 @@ export function ColorPicker({
           )}
         </div>
       </div>
-      {open && (
-        <div
-          ref={popoverRef}
-          data-sightglass-chrome="true"
-          style={{ ...popoverStyle, ...getPopoverPosition() }}
-        >
-          <input
-            type="text"
-            value={hexDraft}
-            style={{
-              ...inputStyle,
-              ...(inputFocused
-                ? {
-                    borderColor: "rgba(255,255,255,0.3)",
-                    boxShadow: "0 0 0 1px rgba(59,130,246,0.3)",
-                  }
-                : {}),
-            }}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
-            onChange={(e) => handleHexInput(e.target.value)}
-            spellCheck={false}
-            aria-label="Hex color"
-          />
-          <Slider
-            label="H"
-            value={h}
-            min={0}
-            max={360}
-            suffix="deg"
-            onChange={(v) => handleHslChange("h", v)}
-          />
-          <Slider
-            label="S"
-            value={s}
-            min={0}
-            max={100}
-            suffix="%"
-            onChange={(v) => handleHslChange("s", v)}
-          />
-          <Slider
-            label="L"
-            value={l}
-            min={0}
-            max={100}
-            suffix="%"
-            onChange={(v) => handleHslChange("l", v)}
-          />
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            data-sightglass-chrome="true"
+            style={{ ...popoverStyle, ...getPopoverPosition() }}
+          >
+            <input
+              type="text"
+              value={hexDraft}
+              style={{
+                ...inputStyle,
+                ...(inputFocused
+                  ? {
+                      borderColor: "rgba(255,255,255,0.3)",
+                      boxShadow: "0 0 0 1px rgba(59,130,246,0.3)",
+                    }
+                  : {}),
+              }}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              onChange={(e) => handleHexInput(e.target.value)}
+              spellCheck={false}
+              aria-label="Hex color"
+            />
+            <Slider
+              label="H"
+              value={h}
+              min={0}
+              max={360}
+              suffix="deg"
+              onChange={(v) => handleHslChange("h", v)}
+            />
+            <Slider
+              label="S"
+              value={s}
+              min={0}
+              max={100}
+              suffix="%"
+              onChange={(v) => handleHslChange("s", v)}
+            />
+            <Slider
+              label="L"
+              value={l}
+              min={0}
+              max={100}
+              suffix="%"
+              onChange={(v) => handleHslChange("l", v)}
+            />
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
