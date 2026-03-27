@@ -160,10 +160,56 @@ const createController = (
   };
 };
 
+class ClassBackedController implements SightglassController {
+  private snapshot: SightglassSessionSnapshot;
+
+  private readonly listeners = new Set<() => void>();
+
+  readonly mount = vi.fn();
+
+  readonly destroy = vi.fn();
+
+  readonly setActive = vi.fn((active: boolean) => {
+    this.snapshot = createSnapshot({ ...this.snapshot, active });
+    this.emit();
+  });
+
+  readonly inspectAtPoint = vi.fn((_point: SelectionPoint) => undefined);
+
+  readonly apply = vi.fn(async (_transaction: Readonly<SessionTransaction>) => this.snapshot.history);
+
+  readonly undo = vi.fn(async () => this.snapshot.history);
+
+  readonly redo = vi.fn(async () => this.snapshot.history);
+
+  constructor(initialSnapshot: SightglassSessionSnapshot = createSnapshot()) {
+    this.snapshot = initialSnapshot;
+  }
+
+  subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  getSnapshot() {
+    return this.snapshot;
+  }
+
+  private emit() {
+    for (const listener of this.listeners) {
+      listener();
+    }
+  }
+}
+
 const renderHarness = (controller = createController()) => {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
+  activeRoot = root;
+  activeContainer = container;
 
   const SessionProbe = () => {
     const session = useSightglassSessionState();
@@ -239,6 +285,12 @@ const renderHarness = (controller = createController()) => {
       act(() => {
         root.unmount();
       });
+      if (activeRoot === root) {
+        activeRoot = null;
+      }
+      if (activeContainer === container) {
+        activeContainer = null;
+      }
       container.remove();
     },
   };
@@ -444,5 +496,38 @@ describe("@sightglass/react provider", () => {
 
     activeRoot = null;
     activeContainer = null;
+  });
+
+  it("registers renderHarness roots with the shared teardown", () => {
+    expect(activeRoot).toBeNull();
+    expect(activeContainer).toBeNull();
+
+    const harness = renderHarness();
+
+    expect(activeRoot).toBe(harness.root);
+    expect(activeContainer).toBe(harness.container);
+
+    harness.cleanup();
+
+    expect(activeRoot).toBeNull();
+    expect(activeContainer).toBeNull();
+  });
+
+  it("supports controllers whose store methods rely on instance binding", () => {
+    const controller = new ClassBackedController(createSnapshot({ active: false }));
+    const harness = renderHarness(controller);
+
+    expect(harness.container.textContent).toContain("Start editing");
+
+    act(() => {
+      harness.container
+        .querySelector("[data-testid='activate']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(controller.setActive).toHaveBeenCalledWith(true);
+    expect(harness.container.textContent).toContain("Editing live");
+
+    harness.cleanup();
   });
 });

@@ -92,6 +92,14 @@ const getRuntimeId = (element: Element, path: string): string => {
   return `${element.tagName.toLowerCase()}:${path}`;
 };
 
+const countSelectorMatches = (element: Element, selector: string): number => {
+  try {
+    return element.ownerDocument.querySelectorAll(selector).length;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+};
+
 const buildSelectors = (element: Element, path: string): Array<{ selector: string; confidence: number }> => {
   const selectors: Array<{ selector: string; confidence: number }> = [];
   const dataTestId = element.getAttribute("data-testid");
@@ -157,10 +165,25 @@ const buildSelectors = (element: Element, path: string): Array<{ selector: strin
     }
   }
 
-  return Array.from(selectorsByValue.values()).sort(
-    (left, right) =>
-      right.confidence - left.confidence || left.selector.localeCompare(right.selector),
-  );
+  const matchCounts = new Map<string, number>();
+
+  for (const selector of selectorsByValue.keys()) {
+    matchCounts.set(selector, countSelectorMatches(element, selector));
+  }
+
+  return Array.from(selectorsByValue.values()).sort((left, right) => {
+    const leftMatchCount = matchCounts.get(left.selector) ?? Number.POSITIVE_INFINITY;
+    const rightMatchCount = matchCounts.get(right.selector) ?? Number.POSITIVE_INFINITY;
+    const leftIsUnique = leftMatchCount === 1 ? 1 : 0;
+    const rightIsUnique = rightMatchCount === 1 ? 1 : 0;
+
+    return (
+      rightIsUnique - leftIsUnique ||
+      leftMatchCount - rightMatchCount ||
+      right.confidence - left.confidence ||
+      left.selector.localeCompare(right.selector)
+    );
+  });
 };
 
 export const generateAnchors = (element: Element): readonly SelectionAnchor[] => {

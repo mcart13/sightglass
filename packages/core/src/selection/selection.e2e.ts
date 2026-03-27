@@ -89,9 +89,15 @@ test("detects the best element and similar repeated cards in-browser", async ({ 
         y: box!.y + box!.height / 2,
       },
     );
+    const primaryAnchorMatches = await page.evaluate(
+      (selector) => document.querySelectorAll(selector).length,
+      result.best!.anchors[0]!.selector,
+    );
 
     expect(result.best?.anchors[0].path.toLowerCase()).toContain("button");
     expect(result.best?.anchors[0].selector).not.toContain("Button_root__9x8y7");
+    expect(result.best?.anchors[0].selector).toContain("article:nth-of-type(1)");
+    expect(primaryAnchorMatches).toBe(1);
     expect(result.similar).toHaveLength(2);
     expect(result.similar.every((match) => match.confidence > 0.5)).toBe(true);
   } finally {

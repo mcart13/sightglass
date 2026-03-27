@@ -80,14 +80,19 @@ export const createTextSession = (
   };
 
   const commitActiveEdit = async (): Promise<Readonly<MutationEngineSnapshot>> => {
-    const currentEdit = clearActiveEdit();
+    if (!activeEdit) {
+      throw new Error("No active text edit");
+    }
+
+    const currentEdit = activeEdit;
     const afterMarkup = serializeRichText(currentEdit.target);
 
     if (afterMarkup === currentEdit.beforeMarkup) {
+      clearActiveEdit();
       return options.engine.snapshot();
     }
 
-    return options.engine.apply(
+    const snapshot = await options.engine.apply(
       createSessionTransaction({
         id: currentEdit.sessionId,
         scope: "single",
@@ -104,6 +109,12 @@ export const createTextSession = (
         createdAt: currentEdit.createdAt,
       }),
     );
+
+    if (activeEdit === currentEdit) {
+      clearActiveEdit();
+    }
+
+    return snapshot;
   };
 
   return {

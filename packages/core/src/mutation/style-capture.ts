@@ -20,18 +20,30 @@ export interface PendingStyleWrite {
 
 const trimStyleValue = (value: string): string => value.trim();
 
+const readTextValue = (target: Element, property: string): string => {
+  if (property === "textContent") {
+    return target.textContent ?? "";
+  }
+
+  return (target as Element & { innerHTML: string }).innerHTML;
+};
+
 export const captureAppliedTargetState = (
   target: Element,
   operation: Readonly<EditOperation>,
 ): AppliedTargetState => {
   if (operation.semanticKind === "text") {
+    const liveValue = readTextValue(target, operation.property);
+    const before =
+      liveValue === operation.after ? operation.before : liveValue;
+
     return {
       target,
       property: operation.property,
       semanticKind: operation.semanticKind,
-      before: operation.before,
-      beforeInline: operation.before,
-      beforeComputed: operation.before,
+      before,
+      beforeInline: before,
+      beforeComputed: before,
       after: operation.after,
     };
   }

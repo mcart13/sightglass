@@ -110,4 +110,21 @@ describe("selection heuristics", () => {
     expect(anchor.selector).toContain("article");
     expect(anchor.selector).toContain("nth-of-type(2)");
   });
+
+  it("prefers a unique path selector over repeated class selectors", () => {
+    const document = createDocument(`
+      <main>
+        <article><button class="primary-button">First</button></article>
+        <article><button class="primary-button">Second</button></article>
+        <article><button class="primary-button">Third</button></article>
+      </main>
+    `);
+    const element = document.querySelectorAll("button")[0] as Element;
+
+    const anchor = core.generateAnchor(element);
+
+    expect(anchor.selector).toContain("article:nth-of-type(1)");
+    expect(anchor.selector).not.toContain('[class~="primary-button"]');
+    expect(document.querySelectorAll(anchor.selector)).toHaveLength(1);
+  });
 });

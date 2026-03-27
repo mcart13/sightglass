@@ -369,6 +369,63 @@ describe("mutation engine", () => {
     expect(target.style.getPropertyValue("background-color")).toBe("orange");
   });
 
+  it("captures each target's live text baseline before grouped text edits", async () => {
+    const document = createDocument(`
+      <div data-session="shared-text"><strong>Alpha</strong></div>
+      <div data-session="shared-text"><em>Beta</em></div>
+    `);
+    const targets = Array.from(
+      document.querySelectorAll("[data-session='shared-text']"),
+    ) as HTMLElement[];
+    const frame = createFrameScheduler();
+    const engine = createMutationEngine({
+      resolveTargets: () => targets,
+      scheduleFrame: frame.scheduleFrame,
+    });
+
+    const applyPromise = engine.apply(
+      createSessionTransaction({
+        id: "shared-text-session",
+        scope: "similar",
+        targets: [
+          createTargetAnchor({
+            runtimeId: "shared-text",
+            selector: "[data-session='shared-text']",
+            path: "body > div",
+            role: null,
+            classes: [],
+          }),
+        ],
+        operations: [
+          {
+            id: "op-inner-html",
+            property: "innerHTML",
+            before: "<strong>Alpha</strong>",
+            after: "<span>Updated</span>",
+            semanticKind: "text",
+          },
+        ],
+        createdAt: "2026-03-27T00:15:00.000Z",
+      }),
+    );
+    frame.flush();
+    await applyPromise;
+
+    expect(targets.map((target) => target.innerHTML)).toEqual([
+      "<span>Updated</span>",
+      "<span>Updated</span>",
+    ]);
+
+    const undoPromise = engine.undo();
+    frame.flush();
+    await undoPromise;
+
+    expect(targets.map((target) => target.innerHTML)).toEqual([
+      "<strong>Alpha</strong>",
+      "<em>Beta</em>",
+    ]);
+  });
+
   it("cleans up disconnected nodes from active state and ignores them during undo", async () => {
     const document = createDocument(`
       <div data-session="session-f" style="color: black;"></div>

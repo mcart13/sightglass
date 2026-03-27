@@ -335,4 +335,36 @@ describe("text session", () => {
     expect(target.innerHTML).toBe("Press <strong>escape</strong>");
     expect(session.current()).toBeNull();
   });
+
+  it("preserves the active edit when commit rejects", async () => {
+    const document = createDocument(`
+      <div data-text-target="editor">Draft <strong>copy</strong></div>
+    `);
+    const target = document.querySelector("[data-text-target='editor']") as HTMLElement;
+    const apply = vi.fn(async () => {
+      throw new Error("apply failed");
+    });
+    const session = createTextSession({
+      engine: {
+        apply,
+        undo: vi.fn(async () => ({ applied: [], canUndo: false, canRedo: false })),
+        redo: vi.fn(async () => ({ applied: [], canUndo: false, canRedo: false })),
+        revertProperty: vi.fn(async () => ({ applied: [], canUndo: false, canRedo: false })),
+        revertSession: vi.fn(async () => ({ applied: [], canUndo: false, canRedo: false })),
+        snapshot: vi.fn(() => ({ applied: [], canUndo: false, canRedo: false })),
+      },
+      createSessionId: () => "text-session-reject",
+      now: () => "2026-03-27T00:20:00.000Z",
+    });
+
+    const edit = session.startTextEdit({
+      target,
+      anchor: createAnchor("[data-text-target='editor']"),
+    });
+    target.innerHTML = "Draft <em>next</em>";
+
+    await expect(session.commitTextEdit()).rejects.toThrow(/apply failed/i);
+    expect(session.current()).toBe(edit);
+    expect(target.innerHTML).toBe("Draft <em>next</em>");
+  });
 });

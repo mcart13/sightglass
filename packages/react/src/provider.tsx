@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -72,10 +73,18 @@ export const SightglassProvider = ({
     );
   }
 
+  const subscribe = useCallback(
+    (listener: () => void) => resolvedController.subscribe(listener),
+    [resolvedController],
+  );
+  const getSnapshot = useCallback(
+    () => resolvedController.getSnapshot(),
+    [resolvedController],
+  );
   const sessionState = useSyncExternalStore(
-    resolvedController.subscribe,
-    resolvedController.getSnapshot,
-    resolvedController.getSnapshot,
+    subscribe,
+    getSnapshot,
+    getSnapshot,
   );
   const [hoveredScope, setHoveredScope] = useState<EditScope | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
