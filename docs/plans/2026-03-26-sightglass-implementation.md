@@ -1,6 +1,6 @@
 # Sightglass Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to resume this plan from Task 7 onward.
 
 **Goal:** Build a separate product that starts where interface-kit stops: a fast in-browser design lab for real React apps with transactional live editing, design-system-aware controls, built-in critique intelligence, motion tuning, and shareable review sessions.
 
@@ -125,7 +125,55 @@ Sightglass should treat the following skill families as product lenses, not just
   - a review artifact with before/after snapshots, critique summary, and change rationale
 - The demo app is good enough to dogfood every release.
 
+**Current status against v1 acceptance:**
+- The live editing, transaction, undo/redo, and base React overlay criteria are materially in place from Tasks 1 through 6.
+- The design-system-aware editing, critique, exploration, motion, export, session, and dogfood acceptance criteria remain open and map directly to Tasks 7 through 13.
+
+## Progress update (2026-03-27)
+
+### Current implementation status
+
+- `main` is at `ebfc47b` and already includes the Phase 1 foundation plus review-loop fixes.
+- Tasks 1 through 6 are complete.
+- Tasks 7 through 13 are not started beyond workspace/package stubs.
+- The next execution session should resume at **Task 7**.
+
+### Completed commit trail
+
+- `141036e` `chore: bootstrap sightglass monorepo`
+- `490c14a` `feat: define core editing contracts`
+- `e526194` `feat: add selection and target inspection engine`
+- `0e008be` `feat: add transactional mutation engine`
+- `c5db1bb` `feat: add structure-preserving text editing`
+- `6a906ad` `feat: add react adapter and overlay shell`
+- `65eb61f` `fix: address review findings`
+- `ebfc47b` `fix: address follow-up review findings`
+
+### Verified on the merged `main` branch
+
+- `yarn install`
+- `yarn build`
+- `yarn typecheck`
+- `yarn test`
+- `yarn workspace @sightglass/core test:e2e`
+- `yarn lint`
+
+### Known plan drift and repo caveats
+
+- The repo uses `yarn@4.13.0`, not `yarn@1.22.22`. Treat Yarn 4 as the canonical workspace setup unless there is a strong reason to revisit it.
+- Root workspace scripts use `yarn workspaces foreach -Wpt ...` rather than the original `-pt` examples.
+- `packages/critique`, `packages/export`, `packages/session`, `apps/playground`, and `apps/site` still expose only bootstrap placeholders, so the remainder is still the real product work rather than polish.
+- On a fresh checkout, `yarn test` currently needs a prior `yarn build` because `@sightglass/react` resolves `@sightglass/core` through the built package entry in `dist`.
+
 ### Task 1: Bootstrap the monorepo shell
+
+**Status:** Completed on `main` in `141036e`.
+
+**Progress evidence:**
+- Root workspace files exist: `package.json`, `tsconfig.base.json`, `.gitignore`.
+- Workspace package manifests exist for all planned packages and apps.
+- The repo installs and builds successfully under Yarn 4.
+- Plan drift: the canonical workspace setup is Yarn 4, not Yarn 1.
 
 **Files:**
 - Create: `/Users/mason/sightglass/package.json`
@@ -187,6 +235,13 @@ git commit -m "chore: bootstrap sightglass monorepo"
 ```
 
 ### Task 2: Define the shared domain model before any UI
+
+**Status:** Completed on `main` in `490c14a`.
+
+**Progress evidence:**
+- `packages/core/src/types.ts`, `packages/core/src/contracts.ts`, and `packages/core/src/types.test.ts` exist.
+- Runtime guards and factory helpers are exported through `packages/core/src/index.ts`.
+- Follow-up contract hardening from review loops landed in `65eb61f`.
 
 **Files:**
 - Create: `/Users/mason/sightglass/packages/core/src/types.ts`
@@ -250,6 +305,13 @@ git commit -m "feat: define core editing contracts"
 
 ### Task 3: Build the headless selection and inspection engine
 
+**Status:** Completed on `main` in `e526194`, with review-loop hardening in `65eb61f` and `ebfc47b`.
+
+**Progress evidence:**
+- Selection files exist under `packages/core/src/selection/`.
+- Browser coverage exists in `packages/core/src/selection/selection.e2e.ts`.
+- Follow-up fixes covered malformed selector tolerance and selector uniqueness ranking before confidence.
+
 **Files:**
 - Create: `/Users/mason/sightglass/packages/core/src/selection/identify.ts`
 - Create: `/Users/mason/sightglass/packages/core/src/selection/find-best-element.ts`
@@ -304,6 +366,13 @@ git commit -m "feat: add selection and target inspection engine"
 
 ### Task 4: Build a transactional mutation engine with history
 
+**Status:** Completed on `main` in `0e008be`, with review-loop hardening in `65eb61f` and `ebfc47b`.
+
+**Progress evidence:**
+- `packages/core/src/mutation/mutation-engine.ts`, `history-store.ts`, `style-capture.ts`, and `mutation-engine.test.ts` exist.
+- Review-loop fixes covered command identity in undo/redo stacks and per-target text baseline capture.
+- Current verification passes include `yarn workspace @sightglass/core test`.
+
 **Files:**
 - Create: `/Users/mason/sightglass/packages/core/src/mutation/mutation-engine.ts`
 - Create: `/Users/mason/sightglass/packages/core/src/mutation/history-store.ts`
@@ -357,6 +426,13 @@ git commit -m "feat: add transactional mutation engine"
 
 ### Task 5: Implement text editing that preserves structure
 
+**Status:** Completed on `main` in `c5db1bb`, with follow-up fixes in `65eb61f` and `ebfc47b`.
+
+**Progress evidence:**
+- `packages/core/src/text/text-session.ts`, `serialize-rich-text.ts`, and `text-session.test.ts` exist.
+- Review-loop fixes covered active-edit preservation on commit failure and related lifecycle safety.
+- Current verification passes include nested markup preservation and undo/redo coverage.
+
 **Files:**
 - Create: `/Users/mason/sightglass/packages/core/src/text/text-session.ts`
 - Create: `/Users/mason/sightglass/packages/core/src/text/serialize-rich-text.ts`
@@ -395,6 +471,13 @@ git commit -m "feat: add structure-preserving text editing"
 ```
 
 ### Task 6: Build the React adapter and overlay shell
+
+**Status:** Completed for the bridge and base shell in `6a906ad`, with review-loop fixes in `65eb61f` and `ebfc47b`.
+
+**Progress evidence:**
+- `packages/react/src/provider.tsx`, `use-sightglass.ts`, `Toolbar.tsx`, `EditorPanel.tsx`, `SelectionOverlay.tsx`, and `provider.test.tsx` exist.
+- The React package consumes `@sightglass/core` without re-implementing selection or history logic.
+- The current shell is intentionally a base overlay: `EditorPanel.tsx` still says semantic token/component controls are pending, which is the expected handoff into Task 7 rather than a missing Task 6 bug.
 
 **Files:**
 - Create: `/Users/mason/sightglass/packages/react/src/provider.tsx`
@@ -448,6 +531,13 @@ git commit -m "feat: add react adapter and overlay shell"
 ```
 
 ### Task 7: Add design-system-aware analysis and semantic controls
+
+**Status:** Not started.
+
+**Evidence:**
+- No `packages/core/src/analyze/` directory exists.
+- No `packages/react/src/components/SemanticInspector.tsx` exists.
+- The current `EditorPanel` is a placeholder shell for these controls.
 
 **Files:**
 - Create: `/Users/mason/sightglass/packages/core/src/analyze/token-detector.ts`
@@ -503,6 +593,12 @@ git commit -m "feat: add design system aware editing"
 ```
 
 ### Task 8: Build the critique engine and perspective system
+
+**Status:** Not started.
+
+**Evidence:**
+- `packages/critique/src/index.ts` is still a one-line readiness stub.
+- None of the planned critique contracts, lenses, perspectives, or `CritiquePanel.tsx` files exist.
 
 **Files:**
 - Create: `/Users/mason/sightglass/packages/critique/src/contracts.ts`
@@ -615,6 +711,12 @@ git commit -m "feat: add critique engine and perspective system"
 
 ### Task 9: Build Explore mode, motion storyboard, and live tuning
 
+**Status:** Not started.
+
+**Evidence:**
+- No explore or motion files exist under `packages/critique/src/`.
+- No `packages/react/src/components/ExplorePanel.tsx` or `MotionLab.tsx` exists.
+
 **Files:**
 - Create: `/Users/mason/sightglass/packages/critique/src/explore/design-directions.ts`
 - Create: `/Users/mason/sightglass/packages/critique/src/explore/edit-plan.ts`
@@ -673,6 +775,12 @@ git commit -m "feat: add explore mode and motion lab"
 ```
 
 ### Task 10: Build structured export and agent output
+
+**Status:** Not started.
+
+**Evidence:**
+- `packages/export/src/index.ts` is still a one-line readiness stub.
+- None of the planned export pipeline files or tests exist.
 
 **Files:**
 - Create: `/Users/mason/sightglass/packages/export/src/change-manifest.ts`
@@ -737,6 +845,13 @@ git commit -m "feat: add structured export pipeline"
 
 ### Task 11: Add local sessions, history snapshots, and review artifacts
 
+**Status:** Not started.
+
+**Evidence:**
+- `packages/session/src/index.ts` is still a one-line readiness stub.
+- No IndexedDB/session schema files exist.
+- No `SessionPanel.tsx` or `apps/playground/src/routes/review.tsx` exists.
+
 **Files:**
 - Create: `/Users/mason/sightglass/packages/session/src/indexeddb-store.ts`
 - Create: `/Users/mason/sightglass/packages/session/src/session-schema.ts`
@@ -789,6 +904,12 @@ git commit -m "feat: add local sessions and review artifacts"
 ```
 
 ### Task 12: Build the dogfood playground and fixture suite
+
+**Status:** Not started beyond bootstrap.
+
+**Evidence:**
+- `apps/playground/src/index.ts` is still a one-line readiness stub.
+- None of the planned `main.tsx`, `App.tsx`, fixtures, or e2e tests exist.
 
 **Files:**
 - Create: `/Users/mason/sightglass/apps/playground/src/main.tsx`
@@ -846,6 +967,13 @@ git commit -m "feat: add dogfood playground"
 
 ### Task 13: Prepare packaging, docs, and launch
 
+**Status:** Not started beyond bootstrap.
+
+**Evidence:**
+- `apps/site/src/index.ts` is still a one-line readiness stub.
+- `README.md` does not exist.
+- `.changeset/` does not exist.
+
 **Files:**
 - Create: `/Users/mason/sightglass/apps/site/src/routes/index.tsx`
 - Create: `/Users/mason/sightglass/apps/site/src/routes/docs.tsx`
@@ -900,18 +1028,31 @@ git commit -m "docs: prepare launch and packaging"
 
 Ship this as one ambitious v1. Use phases only for execution order, not product deferral.
 
+### Resume checkpoint
+
+- Start the next implementation session at **Task 7**.
+- Base branch is `main` at `ebfc47b`.
+- Execute the remaining tasks in order unless a concrete blocker requires resequencing.
+- Do not defer critique, exploration, or motion-lab work; they are part of the approved v1 scope.
+- Recommended warm-up verification before new edits:
+  - `cd /Users/mason/sightglass && yarn build`
+  - `cd /Users/mason/sightglass && yarn typecheck`
+  - `cd /Users/mason/sightglass && yarn test`
+
 ### Phase 1
 
 - monorepo bootstrapped
 - headless engine working
 - React overlay working
 - transactional editing working
+- **Status:** Complete
 
 ### Phase 2
 
 - design-system-aware scopes
 - critique engine working
 - motion-lab and explore mode working
+- **Status:** Not started
 
 ### Phase 3
 
@@ -919,6 +1060,7 @@ Ship this as one ambitious v1. Use phases only for execution order, not product 
 - local sessions working
 - dogfood playground working
 - launch docs and packaging working
+- **Status:** Not started
 
 ## Non-goals for the first release
 

@@ -18,6 +18,8 @@ import { SightglassProvider } from "./provider";
 import {
   useSightglassCommands,
   useSightglassOverlayState,
+  useSightglassReviewDraftCommands,
+  useSightglassReviewDraftState,
   useSightglassSessionState,
 } from "./use-sightglass";
 import { EditorPanel } from "./components/EditorPanel";
@@ -56,29 +58,43 @@ const createSelection = (): Readonly<SelectionResult> =>
     best: Object.freeze({
       confidence: 0.92,
       anchors: Object.freeze([
-        Object.freeze({
-          runtimeId: "selected-target",
-          selector: "[data-testid='selected-target']",
-          path: "main > button:nth-of-type(1)",
-          role: "button",
-          classes: Object.freeze(["cta"]),
-          confidence: 0.98,
-          alternates: Object.freeze(["button.cta"]),
-        }),
-      ]),
-    }),
+          Object.freeze({
+            runtimeId: "selected-target",
+            selector: "[data-testid='selected-target']",
+            path: "main > button:nth-of-type(1)",
+            role: "button",
+            classes: Object.freeze([
+              "cta",
+              "card-action",
+              "rounded-lg",
+              "bg-slate-900",
+              "px-4",
+              "py-2",
+            ]),
+            confidence: 0.98,
+            alternates: Object.freeze(["button.cta"]),
+          }),
+        ]),
+      }),
     similar: Object.freeze([
       Object.freeze({
         confidence: 0.81,
         anchors: Object.freeze([
           Object.freeze({
             runtimeId: "similar-target",
-            selector: ".cta.secondary",
-            path: "aside > button:nth-of-type(1)",
+            selector: "[data-testid='similar-target']",
+            path: "main > button:nth-of-type(2)",
             role: "button",
-            classes: Object.freeze(["cta", "secondary"]),
+            classes: Object.freeze([
+              "cta",
+              "card-action",
+              "rounded-lg",
+              "bg-slate-900",
+              "px-4",
+              "py-2",
+            ]),
             confidence: 0.86,
-            alternates: Object.freeze(["button.cta.secondary"]),
+            alternates: Object.freeze(["button.card-action"]),
           }),
         ]),
       }),
@@ -260,12 +276,33 @@ const renderHarness = (controller = createController()) => {
   act(() => {
     root.render(
       <SightglassProvider controller={controller}>
-        <main>
-          <button data-testid="selected-target" className="cta" type="button">
-            Primary action
+        <main
+          data-route="/playground/landing"
+          style={{ ["--button-radius" as string]: "18px" }}
+        >
+          <button
+            data-testid="selected-target"
+            className="cta card-action rounded-lg bg-slate-900 px-4 py-2"
+            style={{
+              borderRadius: "var(--button-radius)",
+              color: "rgb(15, 23, 42)",
+              transition: "all 420ms ease",
+            }}
+            type="button"
+          >
+            <span>Primary action</span>
           </button>
-          <button className="cta secondary" type="button">
-            Secondary action
+          <button
+            data-testid="similar-target"
+            className="cta card-action rounded-lg bg-slate-900 px-4 py-2"
+            style={{
+              borderRadius: "var(--button-radius)",
+              color: "rgb(15, 23, 42)",
+              transition: "all 420ms ease",
+            }}
+            type="button"
+          >
+            <span>Secondary action</span>
           </button>
         </main>
         <Toolbar />
@@ -389,13 +426,151 @@ describe("@sightglass/react provider", () => {
 
     expect(harness.controller.inspectAtPoint).toHaveBeenCalledWith({ x: 12, y: 18 });
     expect(harness.container.textContent).toContain("[data-testid='selected-target']");
-    expect(harness.container.textContent).toContain("1 similar match");
+    expect(harness.container.textContent).toContain("2 live candidates");
     expect(harness.container.textContent).toContain("Scope preview");
     expect(
       harness.container
         .querySelector("[data-testid='session-probe']")
         ?.getAttribute("data-hovered-scope"),
     ).toBe("similar");
+
+    harness.cleanup();
+  });
+
+  it("renders semantic token and component controls from core analysis", () => {
+    const harness = renderHarness();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-testid='inspect']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("Update token --button-radius");
+    expect(harness.container.textContent).toContain("Update all card-action components");
+    expect(
+      harness.container.querySelector("[data-scope-option='component']"),
+    ).not.toBeNull();
+    expect(
+      harness.container.querySelector("[data-scope-option='token']"),
+    ).not.toBeNull();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-scope-option='component']")
+        ?.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("component");
+
+    harness.cleanup();
+  });
+
+  it("renders grouped critique findings with perspective and scope switches", () => {
+    const harness = renderHarness();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-testid='inspect']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("Critique");
+    expect(harness.container.textContent).toContain("Document language is missing");
+    expect(harness.container.textContent).toContain(
+      "The interaction animates broad or layout-affecting properties",
+    );
+    expect(
+      harness.container.querySelector("[data-critique-scope='page']"),
+    ).not.toBeNull();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-critique-perspective='jhey']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(
+      harness.container
+        .querySelector("[data-critique-perspective='jhey']")
+        ?.getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(harness.container.textContent).toContain("Turn this into an edit plan");
+
+    harness.cleanup();
+  });
+
+  it("renders explore directions and motion tuning controls from critique outputs", () => {
+    const harness = renderHarness();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-testid='inspect']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("Explore");
+    expect(harness.container.textContent).toContain("More playful");
+    expect(
+      harness.container.querySelector("[data-direction-id='playful']"),
+    ).not.toBeNull();
+    expect(harness.container.textContent).toContain("Motion lab");
+    expect(
+      harness.container.querySelector("[data-storyboard-step='travel']"),
+    ).not.toBeNull();
+    expect(
+      harness.container.querySelector("[data-motion-control='duration']"),
+    ).not.toBeNull();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-direction-id='playful']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("More playful edit plan");
+
+    harness.cleanup();
+  });
+
+  it("persists and exports a local session artifact from the review panel", async () => {
+    const harness = renderHarness();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-testid='inspect']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      harness.container
+        .querySelector("[data-session-save]")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      harness.container
+        .querySelector("[data-session-export]")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(harness.container.textContent).toContain("Session review");
+    expect(harness.container.textContent).toContain("Saved Current review.");
+    expect(
+      harness.container.querySelector("[data-session-review-artifact]"),
+    ).not.toBeNull();
+    expect(
+      (
+        harness.container.querySelector(
+          "[data-session-payload]",
+        ) as HTMLTextAreaElement | null
+      )?.value,
+    ).toContain("\"sessionId\":");
 
     harness.cleanup();
   });
@@ -511,6 +686,98 @@ describe("@sightglass/react provider", () => {
 
     expect(activeRoot).toBeNull();
     expect(activeContainer).toBeNull();
+  });
+
+  it("hydrates review draft state without clearing omitted fields", () => {
+    const controller = createController();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    activeRoot = root;
+    activeContainer = container;
+
+    const ReviewDraftProbe = () => {
+      const reviewDraft = useSightglassReviewDraftState();
+      const reviewDraftCommands = useSightglassReviewDraftCommands();
+
+      return (
+        <div>
+          <button
+            data-testid="seed-review-draft"
+            type="button"
+            onClick={() => {
+              reviewDraftCommands.setCritiquePerspective("jhey");
+              reviewDraftCommands.setCritiqueScope("page");
+              reviewDraftCommands.setSelectedFindingId("finding-1");
+              reviewDraftCommands.setSelectedDirectionId("playful");
+              reviewDraftCommands.setMotionValue("duration", 420);
+            }}
+          >
+            seed
+          </button>
+          <button
+            data-testid="hydrate-review-draft"
+            type="button"
+            onClick={() =>
+              reviewDraftCommands.hydrateReviewDraft({
+                critiquePerspective: "jakub",
+              })
+            }
+          >
+            hydrate
+          </button>
+          <output
+            data-testid="review-draft-probe"
+            data-critique-perspective={reviewDraft.critiquePerspective}
+            data-critique-scope={reviewDraft.critiqueScope}
+            data-selected-finding-id={reviewDraft.selectedFindingId ?? "none"}
+            data-selected-direction-id={reviewDraft.selectedDirectionId ?? "none"}
+            data-motion-duration={String(reviewDraft.motionValues.duration ?? 0)}
+          />
+        </div>
+      );
+    };
+
+    act(() => {
+      root.render(
+        <SightglassProvider controller={controller}>
+          <ReviewDraftProbe />
+        </SightglassProvider>,
+      );
+    });
+
+    act(() => {
+      container
+        .querySelector("[data-testid='seed-review-draft']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const probe = () => container.querySelector("[data-testid='review-draft-probe']");
+
+    expect(probe()?.getAttribute("data-critique-perspective")).toBe("jhey");
+    expect(probe()?.getAttribute("data-critique-scope")).toBe("page");
+    expect(probe()?.getAttribute("data-selected-finding-id")).toBe("finding-1");
+    expect(probe()?.getAttribute("data-selected-direction-id")).toBe("playful");
+    expect(probe()?.getAttribute("data-motion-duration")).toBe("420");
+
+    act(() => {
+      container
+        .querySelector("[data-testid='hydrate-review-draft']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(probe()?.getAttribute("data-critique-perspective")).toBe("jakub");
+    expect(probe()?.getAttribute("data-critique-scope")).toBe("page");
+    expect(probe()?.getAttribute("data-selected-finding-id")).toBe("finding-1");
+    expect(probe()?.getAttribute("data-selected-direction-id")).toBe("playful");
+    expect(probe()?.getAttribute("data-motion-duration")).toBe("420");
+
+    act(() => {
+      root.unmount();
+    });
+
+    activeRoot = null;
+    activeContainer = null;
   });
 
   it("supports controllers whose store methods rely on instance binding", () => {

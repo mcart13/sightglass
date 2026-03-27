@@ -1,17 +1,29 @@
 {
   "name": "@sightglass/critique",
   "version": "0.0.0",
-  "private": true,
+  "private": false,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@sightglass/core": "workspace:*"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo 'test not configured for @sightglass/critique yet'",
+    "build": "yarn run -T tsc -p tsconfig.json",
+    "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
+    "test": "yarn run -T vitest run",
     "lint": "echo 'lint not configured for @sightglass/critique yet'"
   }
 }

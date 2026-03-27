@@ -4,6 +4,11 @@ import {
   useSightglassOverlayState,
   useSightglassSessionState,
 } from "../use-sightglass";
+import { CritiquePanel } from "./CritiquePanel";
+import { ExplorePanel } from "./ExplorePanel";
+import { MotionLab } from "./MotionLab";
+import { SemanticInspector } from "./SemanticInspector";
+import { SessionPanel } from "./SessionPanel";
 
 const panelStyle: CSSProperties = {
   position: "fixed",
@@ -28,6 +33,15 @@ const sectionLabelStyle: CSSProperties = {
   color: "#64748b",
 };
 
+const scrollAreaStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+  marginTop: 18,
+  maxHeight: "calc(100vh - 248px)",
+  overflowY: "auto",
+  paddingRight: 4,
+};
+
 const detailRowStyle: CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
@@ -40,9 +54,7 @@ export const EditorPanel = () => {
   const overlay = useSightglassOverlayState();
   const commands = useSightglassCommands();
   const primaryAnchor = session.selection.best?.anchors[0] ?? null;
-  const similarCount = session.selection.similar.length;
-  const similarLabel =
-    similarCount === 1 ? "1 similar match" : `${similarCount} similar matches`;
+  const scopeCount = session.selection.similar.length + (primaryAnchor ? 1 : 0);
 
   if (!overlay.panelOpen) {
     return (
@@ -80,11 +92,11 @@ export const EditorPanel = () => {
           </button>
         </div>
         <p style={{ margin: 0, color: "#334155" }}>
-          Ready for token, component, and scope-aware editing controls.
+          Semantic controls stay ahead of raw CSS so you can widen edits with intent.
         </p>
       </div>
 
-      <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
+      <div style={scrollAreaStyle}>
         <div style={detailRowStyle}>
           <span style={sectionLabelStyle}>Target</span>
           <strong>{primaryAnchor?.selector ?? "No target selected"}</strong>
@@ -102,13 +114,29 @@ export const EditorPanel = () => {
 
         <div style={detailRowStyle}>
           <span style={sectionLabelStyle}>Scope candidates</span>
-          <strong>{similarLabel}</strong>
+          <strong>
+            {scopeCount === 0
+              ? "No candidates"
+              : scopeCount === 1
+                ? "Only this target"
+                : `${scopeCount} live candidates`}
+          </strong>
         </div>
 
         <div style={detailRowStyle}>
           <span style={sectionLabelStyle}>Preview mode</span>
           <span>{overlay.hoveredScope ?? "single"}</span>
         </div>
+
+        <SemanticInspector
+          commands={commands}
+          overlay={overlay}
+          session={session}
+        />
+        <CritiquePanel session={session} />
+        <ExplorePanel session={session} />
+        <MotionLab session={session} />
+        <SessionPanel session={session} />
       </div>
     </aside>
   );

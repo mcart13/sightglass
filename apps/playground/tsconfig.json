@@ -1,10 +1,40 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist"
+    "rootDir": "../..",
+    "outDir": "dist",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@sightglass/core": [
+        "../../packages/core/src/index.ts"
+      ],
+      "@sightglass/critique": [
+        "../../packages/critique/src/index.ts"
+      ],
+      "@sightglass/export": [
+        "../../packages/export/src/index.ts"
+      ],
+      "@sightglass/react": [
+        "../../packages/react/src/index.ts"
+      ],
+      "@sightglass/session": [
+        "../../packages/session/src/index.ts"
+      ]
+    }
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "e2e/**/*.ts",
+    "playwright.config.ts",
+    "vite.config.ts"
   ]
 }
