@@ -28,7 +28,6 @@ import {
   EditorPanel,
   SelectionOverlay,
   SightglassProvider,
-  Toolbar,
   useSightglassCommands,
   useSightglassReviewDraftCommands,
   useSightglassReviewDraftState,
@@ -741,7 +740,6 @@ export const App = () => {
       <div data-sightglass-chrome="true">
         <SelectionOverlay />
         <EditorPanel />
-        <Toolbar />
       </div>
     </SightglassProvider>
   );
