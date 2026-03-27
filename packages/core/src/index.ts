@@ -31,6 +31,15 @@ export {
 } from "./selection/find-best-element.js";
 export { findSimilarElements } from "./selection/find-similar-elements.js";
 export { identifySelection } from "./selection/identify.js";
+export {
+  analyzeSemanticContext,
+  resolveScopeOptions,
+} from "./analyze/scope-resolver.js";
+export {
+  describeComponentSignature,
+  detectComponentMatch,
+} from "./analyze/component-detector.js";
+export { detectTokenCandidates } from "./analyze/token-detector.js";
 export { createMutationEngine } from "./mutation/mutation-engine.js";
 export {
   createTextSession,
@@ -40,6 +49,18 @@ export {
   serializeRichText,
 } from "./text/serialize-rich-text.js";
 export { createSightglassController } from "./controller.js";
+export type {
+  ComponentMatch,
+  ComponentSignature,
+} from "./analyze/component-detector.js";
+export type {
+  ScopeOption,
+  SemanticAnalysis,
+} from "./analyze/scope-resolver.js";
+export type {
+  SemanticTokenCandidate,
+  SemanticTokenKind,
+} from "./analyze/token-detector.js";
 export type {
   SelectionAnchor,
 } from "./selection/generate-anchor.js";

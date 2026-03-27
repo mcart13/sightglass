@@ -4,6 +4,7 @@ import {
   useSightglassOverlayState,
   useSightglassSessionState,
 } from "../use-sightglass";
+import { SemanticInspector } from "./SemanticInspector";
 
 const panelStyle: CSSProperties = {
   position: "fixed",
@@ -40,9 +41,7 @@ export const EditorPanel = () => {
   const overlay = useSightglassOverlayState();
   const commands = useSightglassCommands();
   const primaryAnchor = session.selection.best?.anchors[0] ?? null;
-  const similarCount = session.selection.similar.length;
-  const similarLabel =
-    similarCount === 1 ? "1 similar match" : `${similarCount} similar matches`;
+  const scopeCount = session.selection.similar.length + 1;
 
   if (!overlay.panelOpen) {
     return (
@@ -80,7 +79,7 @@ export const EditorPanel = () => {
           </button>
         </div>
         <p style={{ margin: 0, color: "#334155" }}>
-          Ready for token, component, and scope-aware editing controls.
+          Semantic controls stay ahead of raw CSS so you can widen edits with intent.
         </p>
       </div>
 
@@ -102,7 +101,7 @@ export const EditorPanel = () => {
 
         <div style={detailRowStyle}>
           <span style={sectionLabelStyle}>Scope candidates</span>
-          <strong>{similarLabel}</strong>
+          <strong>{scopeCount === 1 ? "Only this target" : `${scopeCount} live candidates`}</strong>
         </div>
 
         <div style={detailRowStyle}>
@@ -110,6 +109,12 @@ export const EditorPanel = () => {
           <span>{overlay.hoveredScope ?? "single"}</span>
         </div>
       </div>
+
+      <SemanticInspector
+        commands={commands}
+        overlay={overlay}
+        session={session}
+      />
     </aside>
   );
 };

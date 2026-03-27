@@ -56,29 +56,43 @@ const createSelection = (): Readonly<SelectionResult> =>
     best: Object.freeze({
       confidence: 0.92,
       anchors: Object.freeze([
-        Object.freeze({
-          runtimeId: "selected-target",
-          selector: "[data-testid='selected-target']",
-          path: "main > button:nth-of-type(1)",
-          role: "button",
-          classes: Object.freeze(["cta"]),
-          confidence: 0.98,
-          alternates: Object.freeze(["button.cta"]),
-        }),
-      ]),
-    }),
+          Object.freeze({
+            runtimeId: "selected-target",
+            selector: "[data-testid='selected-target']",
+            path: "main > button:nth-of-type(1)",
+            role: "button",
+            classes: Object.freeze([
+              "cta",
+              "card-action",
+              "rounded-lg",
+              "bg-slate-900",
+              "px-4",
+              "py-2",
+            ]),
+            confidence: 0.98,
+            alternates: Object.freeze(["button.cta"]),
+          }),
+        ]),
+      }),
     similar: Object.freeze([
       Object.freeze({
         confidence: 0.81,
         anchors: Object.freeze([
           Object.freeze({
             runtimeId: "similar-target",
-            selector: ".cta.secondary",
+            selector: "[data-testid='similar-target']",
             path: "aside > button:nth-of-type(1)",
             role: "button",
-            classes: Object.freeze(["cta", "secondary"]),
+            classes: Object.freeze([
+              "cta",
+              "card-action",
+              "rounded-lg",
+              "bg-slate-900",
+              "px-4",
+              "py-2",
+            ]),
             confidence: 0.86,
-            alternates: Object.freeze(["button.cta.secondary"]),
+            alternates: Object.freeze(["button.card-action"]),
           }),
         ]),
       }),
@@ -260,12 +274,28 @@ const renderHarness = (controller = createController()) => {
   act(() => {
     root.render(
       <SightglassProvider controller={controller}>
-        <main>
-          <button data-testid="selected-target" className="cta" type="button">
-            Primary action
+        <main style={{ ["--button-radius" as string]: "18px" }}>
+          <button
+            data-testid="selected-target"
+            className="cta card-action rounded-lg bg-slate-900 px-4 py-2"
+            style={{
+              borderRadius: "var(--button-radius)",
+              color: "rgb(15, 23, 42)",
+            }}
+            type="button"
+          >
+            <span>Primary action</span>
           </button>
-          <button className="cta secondary" type="button">
-            Secondary action
+          <button
+            data-testid="similar-target"
+            className="cta card-action rounded-lg bg-slate-900 px-4 py-2"
+            style={{
+              borderRadius: "var(--button-radius)",
+              color: "rgb(15, 23, 42)",
+            }}
+            type="button"
+          >
+            <span>Secondary action</span>
           </button>
         </main>
         <Toolbar />
@@ -389,13 +419,42 @@ describe("@sightglass/react provider", () => {
 
     expect(harness.controller.inspectAtPoint).toHaveBeenCalledWith({ x: 12, y: 18 });
     expect(harness.container.textContent).toContain("[data-testid='selected-target']");
-    expect(harness.container.textContent).toContain("1 similar match");
+    expect(harness.container.textContent).toContain("2 live candidates");
     expect(harness.container.textContent).toContain("Scope preview");
     expect(
       harness.container
         .querySelector("[data-testid='session-probe']")
         ?.getAttribute("data-hovered-scope"),
     ).toBe("similar");
+
+    harness.cleanup();
+  });
+
+  it("renders semantic token and component controls from core analysis", () => {
+    const harness = renderHarness();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-testid='inspect']")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("Update token --button-radius");
+    expect(harness.container.textContent).toContain("Update all card-action components");
+    expect(
+      harness.container.querySelector("[data-scope-option='component']"),
+    ).not.toBeNull();
+    expect(
+      harness.container.querySelector("[data-scope-option='token']"),
+    ).not.toBeNull();
+
+    act(() => {
+      harness.container
+        .querySelector("[data-scope-option='component']")
+        ?.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+    });
+
+    expect(harness.container.textContent).toContain("component");
 
     harness.cleanup();
   });
