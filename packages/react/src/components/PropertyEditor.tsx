@@ -16,11 +16,21 @@ import {
   type SliderStop,
 } from "./controls";
 
+const ALIGN_VALUES = new Set([
+  "flex-start",
+  "center",
+  "flex-end",
+  "stretch",
+  "space-between",
+]);
+const toAlignValue = (v: string): AlignValue =>
+  ALIGN_VALUES.has(v) ? (v as AlignValue) : "center";
+
 // --- helpers ---
 
 function rgbToHex(rgb: string): string {
   if (rgb.startsWith("#")) return rgb;
-  if (rgb === "transparent" || rgb === "rgba(0, 0, 0, 0)") return "transparent";
+  if (rgb === "transparent" || rgb === "rgba(0, 0, 0, 0)") return "#000000";
   const match = rgb.match(/\d+/g);
   if (!match || match.length < 3) return "#000000";
   const [r, g, b] = match.map(Number);
@@ -68,7 +78,8 @@ function useComputedStyles(element: Element | null, history: unknown) {
     // history is used as a cache-bust key so the memo
     // re-evaluates after mutations are applied.
     void history;
-    return getComputedStyle(element);
+    const view = element.ownerDocument.defaultView;
+    return view ? view.getComputedStyle(element) : getComputedStyle(element);
   }, [element, history]);
 }
 
@@ -130,8 +141,12 @@ export function PropertyEditor({ session, commands }: PropertyEditorProps) {
   }, [computed]);
 
   const apply = useCallback(
-    (property: string, value: string) => {
-      commands.applyStyle(property, value);
+    async (property: string, value: string) => {
+      try {
+        await commands.applyStyle(property, value);
+      } catch (err) {
+        console.warn("[sightglass] Failed to apply style:", err);
+      }
     },
     [commands]
   );
@@ -293,13 +308,13 @@ export function PropertyEditor({ session, commands }: PropertyEditorProps) {
           <span style={panelSectionLabelStyle}>Flex</span>
           <AlignmentControl
             label="Align Items"
-            value={computed.alignItems as AlignValue}
+            value={toAlignValue(computed.alignItems)}
             options={["flex-start", "center", "flex-end", "stretch"]}
             onChange={(v) => apply("align-items", v)}
           />
           <AlignmentControl
             label="Justify Content"
-            value={computed.justifyContent as AlignValue}
+            value={toAlignValue(computed.justifyContent)}
             options={["flex-start", "center", "flex-end", "space-between"]}
             onChange={(v) => apply("justify-content", v)}
           />

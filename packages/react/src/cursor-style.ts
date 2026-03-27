@@ -5,9 +5,10 @@ const CURSOR_STYLE_ID = "sightglass-cursor-style";
 const CURSOR_CSS = `
 body { cursor: crosshair !important; }
 body * { cursor: crosshair !important; }
-[data-sightglass-chrome] { cursor: default !important; }
+[data-sightglass-chrome], [data-sightglass-chrome] * { cursor: default !important; }
 [data-sightglass-chrome] button, [data-sightglass-chrome] a { cursor: pointer !important; }
-[data-sightglass-chrome] input, [data-sightglass-chrome] textarea, [data-sightglass-chrome] select { cursor: text !important; }
+[data-sightglass-chrome] input[type="text"], [data-sightglass-chrome] input[type="search"], [data-sightglass-chrome] input[type="password"], [data-sightglass-chrome] input[type="tel"], [data-sightglass-chrome] input[type="url"], [data-sightglass-chrome] input[type="email"], [data-sightglass-chrome] input[type="number"], [data-sightglass-chrome] textarea { cursor: text !important; }
+[data-sightglass-chrome] select { cursor: pointer !important; }
 [data-sightglass-chrome] input[type="range"] { cursor: ew-resize !important; }
 [data-sightglass-chrome] [contenteditable] { cursor: text !important; }
 [contenteditable] { cursor: text !important; caret-color: #2563eb !important; }

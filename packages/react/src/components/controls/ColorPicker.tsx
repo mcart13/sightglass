@@ -99,6 +99,7 @@ export function ColorPicker({
 }: ColorPickerProps) {
   const [open, setOpen] = useState(false);
   const [hexDraft, setHexDraft] = useState(value);
+  const [inputFocused, setInputFocused] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -277,8 +278,19 @@ export function ColorPicker({
           style={{ ...popoverStyle, ...getPopoverPosition() }}
         >
           <input
-            style={inputStyle}
+            type="text"
             value={hexDraft}
+            style={{
+              ...inputStyle,
+              ...(inputFocused
+                ? {
+                    borderColor: "rgba(255,255,255,0.3)",
+                    boxShadow: "0 0 0 1px rgba(59,130,246,0.3)",
+                  }
+                : {}),
+            }}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             onChange={(e) => handleHexInput(e.target.value)}
             spellCheck={false}
             aria-label="Hex color"

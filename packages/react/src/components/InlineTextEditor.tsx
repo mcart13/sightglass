@@ -49,6 +49,10 @@ export const InlineTextEditor = () => {
     commands.commitTextEdit();
   }, [commands]);
 
+  // Paste interceptor: intentionally uses execCommand("insertText") because it is
+  // the most reliable cross-browser method for inserting plain text at the caret
+  // in contenteditable elements. The Selection/Range API alternative has inconsistent
+  // behavior across browsers for this use case. Uses ownerDocument for iframe compat.
   const handlePaste = useCallback((e: Event) => {
     e.preventDefault();
     const ce = e as ClipboardEvent;

@@ -278,7 +278,9 @@ export const createSightglassController = (
           {
             id: `op-${Date.now().toString(36)}`,
             property,
-            before: getComputedStyle(el).getPropertyValue(property),
+            before: (el.ownerDocument.defaultView ?? globalThis)
+              .getComputedStyle(el)
+              .getPropertyValue(property),
             after: value,
             semanticKind,
           },
