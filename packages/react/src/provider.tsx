@@ -36,6 +36,7 @@ interface SightglassCommands {
   inspectAtPoint(point: SelectionPoint): void;
   undo(): Promise<unknown>;
   redo(): Promise<unknown>;
+  applyStyle(property: string, value: string): Promise<void>;
   startTextEdit(): void;
   commitTextEdit(): Promise<void>;
   cancelTextEdit(): void;
@@ -156,6 +157,9 @@ export const SightglassProvider = ({
       inspectAtPoint: (point) => resolvedController.inspectAtPoint(point),
       undo: () => resolvedController.undo(),
       redo: () => resolvedController.redo(),
+      applyStyle: async (property, value) => {
+        await resolvedController.applyStyleToSelected(property, value);
+      },
       startTextEdit: () => resolvedController.startTextEdit(),
       commitTextEdit: () => resolvedController.commitTextEdit(),
       cancelTextEdit: () => resolvedController.cancelTextEdit(),

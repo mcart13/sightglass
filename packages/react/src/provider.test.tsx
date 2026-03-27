@@ -180,6 +180,7 @@ const createController = (
     startTextEdit: vi.fn(),
     commitTextEdit: vi.fn().mockResolvedValue(undefined),
     cancelTextEdit: vi.fn(),
+    applyStyleToSelected: vi.fn(async () => snapshot.history),
   };
 };
 
@@ -210,6 +211,10 @@ class ClassBackedController implements SightglassController {
   async commitTextEdit() {}
 
   cancelTextEdit() {}
+
+  async applyStyleToSelected() {
+    return this.snapshot.history;
+  }
 
   constructor(initialSnapshot: SightglassSessionSnapshot = createSnapshot()) {
     this.snapshot = initialSnapshot;

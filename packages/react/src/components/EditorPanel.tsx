@@ -9,6 +9,7 @@ import { CritiquePanel } from "./CritiquePanel";
 import { ExplorePanel } from "./ExplorePanel";
 import { InlineTextEditor } from "./InlineTextEditor";
 import { MotionLab } from "./MotionLab";
+import { PropertyEditor } from "./PropertyEditor";
 import { SemanticInspector } from "./SemanticInspector";
 import {
   panelRowLabelStyle,
@@ -369,11 +370,14 @@ export const EditorPanel = () => {
               </div>
 
               {activeTab === "Style" && (
-                <SemanticInspector
-                  commands={commands}
-                  overlay={overlay}
-                  session={session}
-                />
+                <>
+                  <PropertyEditor session={session} commands={commands} />
+                  <SemanticInspector
+                    commands={commands}
+                    overlay={overlay}
+                    session={session}
+                  />
+                </>
               )}
               {activeTab === "Issues" && <CritiquePanel session={session} />}
               {activeTab === "Explore" && <ExplorePanel session={session} />}

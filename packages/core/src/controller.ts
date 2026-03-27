@@ -17,7 +17,8 @@ import {
   type ActiveTextEdit,
 } from "./text/text-session.js";
 import { generateAnchor } from "./selection/generate-anchor.js";
-import type { SessionTransaction } from "./types.js";
+import { createSessionTransaction } from "./contracts.js";
+import type { EditSemanticKind, SessionTransaction } from "./types.js";
 
 export interface SightglassSessionSnapshot {
   readonly active: boolean;
@@ -38,6 +39,11 @@ export interface SightglassController {
   ): Promise<Readonly<MutationEngineSnapshot>>;
   undo(): Promise<Readonly<MutationEngineSnapshot>>;
   redo(): Promise<Readonly<MutationEngineSnapshot>>;
+  applyStyleToSelected(
+    property: string,
+    value: string,
+    semanticKind?: EditSemanticKind
+  ): Promise<Readonly<MutationEngineSnapshot>>;
   startTextEdit(): void;
   commitTextEdit(): Promise<void>;
   cancelTextEdit(): void;
@@ -230,6 +236,34 @@ export const createSightglassController = (
       edit.target.removeAttribute("contenteditable");
       textSession.cancelTextEdit();
       updateSnapshot({ isEditingText: false });
+    },
+
+    async applyStyleToSelected(property, value, semanticKind = "css") {
+      const el = snapshot.selectedElement;
+      if (!el) return snapshot.history;
+
+      const anchor = generateAnchor(el);
+      const transaction = createSessionTransaction({
+        id: `style-${Date.now().toString(36)}-${Math.random()
+          .toString(36)
+          .slice(2, 6)}`,
+        scope: "single",
+        targets: [anchor],
+        operations: [
+          {
+            id: `op-${Date.now().toString(36)}`,
+            property,
+            before: getComputedStyle(el).getPropertyValue(property),
+            after: value,
+            semanticKind,
+          },
+        ],
+        createdAt: new Date().toISOString(),
+      });
+
+      const history = await mutationEngine.apply(transaction);
+      updateSnapshot({ history });
+      return history;
     },
   };
 };
