@@ -187,12 +187,29 @@ describe("critique engine", () => {
   });
 
   it("returns null when scoped critique cannot run yet", () => {
+    const document = createDocument(`
+      <main>
+        <button data-testid="selected-target">Try it</button>
+      </main>
+    `);
+    const selectedElement = document.querySelector(
+      "[data-testid='selected-target']",
+    ) as Element;
+
     expect(
       runScopedCritique({
         selectedElement: null,
         perspective: "emil",
         scope: "page",
         target: createAnchor(),
+      }),
+    ).toBeNull();
+    expect(
+      runScopedCritique({
+        selectedElement,
+        perspective: "emil",
+        scope: "page",
+        target: null,
       }),
     ).toBeNull();
   });

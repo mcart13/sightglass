@@ -9,10 +9,7 @@ import type {
 } from "./contracts.js";
 import type { TargetAnchor } from "@sightglass/core";
 import { CRITIQUE_CATEGORIES } from "./contracts.js";
-import {
-  inferCritiqueContext,
-  resolveCritiqueScopeElement,
-} from "./context/infer-context.js";
+import { inferCritiqueContext } from "./context/infer-context.js";
 import { buildExploreEditPlan } from "./explore/edit-plan.js";
 import { generateDesignDirections } from "./explore/design-directions.js";
 import { runAccessibilityLens } from "./lenses/accessibility.js";
@@ -121,11 +118,7 @@ export const runScopedCritique = (
 
   return runCritique({
     document: options.selectedElement.ownerDocument,
-    selectedElement: resolveCritiqueScopeElement(
-      options.selectedElement.ownerDocument,
-      options.selectedElement,
-      options.scope,
-    ),
+    selectedElement: options.selectedElement,
     perspective: options.perspective,
     scope: options.scope,
     target: options.target,
