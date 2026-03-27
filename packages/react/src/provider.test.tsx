@@ -50,6 +50,7 @@ const createSnapshot = (
   history: emptyHistory(),
   selectedElement: null,
   selection: emptySelection(),
+  isEditingText: false,
   ...overrides,
 });
 
@@ -109,6 +110,9 @@ const createController = (
   readonly inspectAtPoint: ReturnType<typeof vi.fn>;
   readonly undo: ReturnType<typeof vi.fn>;
   readonly redo: ReturnType<typeof vi.fn>;
+  readonly startTextEdit: ReturnType<typeof vi.fn>;
+  readonly commitTextEdit: ReturnType<typeof vi.fn>;
+  readonly cancelTextEdit: ReturnType<typeof vi.fn>;
 } => {
   let snapshot = initialSnapshot;
   const listeners = new Set<() => void>();
@@ -173,6 +177,9 @@ const createController = (
       emit();
       return snapshot.history;
     }),
+    startTextEdit: vi.fn(),
+    commitTextEdit: vi.fn().mockResolvedValue(undefined),
+    cancelTextEdit: vi.fn(),
   };
 };
 
@@ -198,6 +205,12 @@ class ClassBackedController implements SightglassController {
 
   readonly redo = vi.fn(async () => this.snapshot.history);
 
+  startTextEdit() {}
+
+  async commitTextEdit() {}
+
+  cancelTextEdit() {}
+
   constructor(initialSnapshot: SightglassSessionSnapshot = createSnapshot()) {
     this.snapshot = initialSnapshot;
   }
@@ -220,7 +233,9 @@ class ClassBackedController implements SightglassController {
   }
 }
 
-const renderHarness = (controller = createController()) => {
+const renderHarness = (
+  controller: SightglassController = createController()
+) => {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);

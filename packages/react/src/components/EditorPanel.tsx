@@ -7,6 +7,7 @@ import {
 } from "../use-sightglass";
 import { CritiquePanel } from "./CritiquePanel";
 import { ExplorePanel } from "./ExplorePanel";
+import { InlineTextEditor } from "./InlineTextEditor";
 import { MotionLab } from "./MotionLab";
 import { SemanticInspector } from "./SemanticInspector";
 import {
@@ -256,6 +257,7 @@ export const EditorPanel = () => {
 
   return (
     <div data-sightglass-chrome="true">
+      <InlineTextEditor />
       {/* Toolbar bar - always visible when open */}
       <motion.div
         style={toolbarStyle}

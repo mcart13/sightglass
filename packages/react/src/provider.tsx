@@ -36,6 +36,9 @@ interface SightglassCommands {
   inspectAtPoint(point: SelectionPoint): void;
   undo(): Promise<unknown>;
   redo(): Promise<unknown>;
+  startTextEdit(): void;
+  commitTextEdit(): Promise<void>;
+  cancelTextEdit(): void;
   setHoveredScope(scope: EditScope | null): void;
   setPanelOpen(open: boolean): void;
 }
@@ -153,6 +156,9 @@ export const SightglassProvider = ({
       inspectAtPoint: (point) => resolvedController.inspectAtPoint(point),
       undo: () => resolvedController.undo(),
       redo: () => resolvedController.redo(),
+      startTextEdit: () => resolvedController.startTextEdit(),
+      commitTextEdit: () => resolvedController.commitTextEdit(),
+      cancelTextEdit: () => resolvedController.cancelTextEdit(),
       setHoveredScope,
       setPanelOpen,
     }),

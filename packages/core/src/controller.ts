@@ -11,6 +11,12 @@ import {
   type MutationEngine,
   type MutationEngineSnapshot,
 } from "./mutation/mutation-engine.js";
+import {
+  createTextSession,
+  type TextSession,
+  type ActiveTextEdit,
+} from "./text/text-session.js";
+import { generateAnchor } from "./selection/generate-anchor.js";
 import type { SessionTransaction } from "./types.js";
 
 export interface SightglassSessionSnapshot {
@@ -18,6 +24,7 @@ export interface SightglassSessionSnapshot {
   readonly selectedElement: Element | null;
   readonly selection: Readonly<SelectionResult>;
   readonly history: Readonly<MutationEngineSnapshot>;
+  readonly isEditingText: boolean;
 }
 
 export interface SightglassController {
@@ -31,6 +38,9 @@ export interface SightglassController {
   ): Promise<Readonly<MutationEngineSnapshot>>;
   undo(): Promise<Readonly<MutationEngineSnapshot>>;
   redo(): Promise<Readonly<MutationEngineSnapshot>>;
+  startTextEdit(): void;
+  commitTextEdit(): Promise<void>;
+  cancelTextEdit(): void;
 }
 
 export interface CreateSightglassControllerOptions {
@@ -89,6 +99,7 @@ const createSnapshot = (
         canUndo: false,
         canRedo: false,
       }),
+    isEditingText: previous?.isEditingText ?? false,
     ...overrides,
   });
 
@@ -100,6 +111,7 @@ export const createSightglassController = (
     createMutationEngine({
       resolveTargets: createResolveTargets(options.document),
     });
+  const textSession = createTextSession({ engine: mutationEngine });
   const listeners = new Set<() => void>();
   let snapshot = createSnapshot({
     history: mutationEngine.snapshot(),
@@ -118,6 +130,11 @@ export const createSightglassController = (
 
   return {
     destroy() {
+      const edit = textSession.current();
+      if (edit) {
+        edit.target.removeAttribute("contenteditable");
+        textSession.cancelTextEdit();
+      }
       listeners.clear();
     },
 
@@ -137,10 +154,24 @@ export const createSightglassController = (
         return;
       }
 
+      if (!active && textSession.current()) {
+        const edit = textSession.current()!;
+        edit.target.removeAttribute("contenteditable");
+        textSession.cancelTextEdit();
+        updateSnapshot({ active, isEditingText: false });
+        return;
+      }
+
       updateSnapshot({ active });
     },
 
     inspectAtPoint(point) {
+      if (textSession.current()) {
+        const edit = textSession.current()!;
+        edit.target.removeAttribute("contenteditable");
+        textSession.cancelTextEdit();
+      }
+
       const selectedElement = resolveBestElement(options.document, point);
       const selection = identifySelection(
         options.document,
@@ -151,6 +182,7 @@ export const createSightglassController = (
       updateSnapshot({
         selectedElement,
         selection: toReadonlySelection(selection),
+        isEditingText: false,
       });
     },
 
@@ -170,6 +202,34 @@ export const createSightglassController = (
       const history = await mutationEngine.redo();
       updateSnapshot({ history });
       return history;
+    },
+
+    startTextEdit() {
+      const el = snapshot.selectedElement;
+      if (!el || textSession.current()) return;
+      const anchor = generateAnchor(el);
+      textSession.startTextEdit({ target: el, anchor });
+      el.setAttribute("contenteditable", "plaintext-only");
+      if (el instanceof HTMLElement) {
+        el.focus();
+      }
+      updateSnapshot({ isEditingText: true });
+    },
+
+    async commitTextEdit() {
+      const edit = textSession.current();
+      if (!edit) return;
+      edit.target.removeAttribute("contenteditable");
+      const history = await textSession.commitTextEdit();
+      updateSnapshot({ isEditingText: false, history });
+    },
+
+    cancelTextEdit() {
+      const edit = textSession.current();
+      if (!edit) return;
+      edit.target.removeAttribute("contenteditable");
+      textSession.cancelTextEdit();
+      updateSnapshot({ isEditingText: false });
     },
   };
 };
