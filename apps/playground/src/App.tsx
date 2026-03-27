@@ -176,25 +176,19 @@ const SelectionBridge = () => {
         return;
       }
 
+      // Skip clicks on sightglass chrome (toolbar, panel, overlays)
       if (event.target.closest("[data-sightglass-chrome='true']")) {
-        return;
-      }
-
-      const selectable = event.target.closest(
-        "[data-sightglass-selectable='true']"
-      );
-
-      if (!selectable) {
         return;
       }
 
       event.preventDefault();
       event.stopPropagation();
 
-      const rect = selectable.getBoundingClientRect();
+      // Pass the actual click coordinates so resolveBestElement
+      // picks the most specific element under the cursor
       commands.inspectAtPoint({
-        x: Math.min(rect.left + 16, rect.right - 1),
-        y: Math.min(rect.top + 16, rect.bottom - 1),
+        x: event.clientX,
+        y: event.clientY,
       });
     };
 

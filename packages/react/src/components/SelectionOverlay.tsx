@@ -1,6 +1,7 @@
 // packages/react/src/components/SelectionOverlay.tsx
 import { useEffect, useState, type CSSProperties } from "react";
 import { motion, useMotionValue, useSpring } from "motion/react";
+import { INTERACTIVE_SELECTOR } from "@sightglass/core";
 import { useSightglassSessionState } from "../use-sightglass";
 
 const SELECTION_PADDING = 8;
@@ -97,18 +98,17 @@ export const SelectionOverlay = () => {
         return;
       }
 
-      // Find the nearest selectable ancestor, or use the target itself
-      const selectable =
-        target.closest("[data-sightglass-selectable]") ?? target;
+      // Resolve to the nearest interactive ancestor (same logic as resolveBestElement)
+      const resolved = target.closest(INTERACTIVE_SELECTOR) ?? target;
 
       // Don't show hover on the already-selected element
-      if (selectable === selectedElement) {
+      if (resolved === selectedElement) {
         setHoverRect(null);
         return;
       }
 
-      setHoverRect(selectable.getBoundingClientRect());
-      setHoverTag(selectable.tagName.toLowerCase());
+      setHoverRect(resolved.getBoundingClientRect());
+      setHoverTag(resolved.tagName.toLowerCase());
     };
 
     const handleMouseLeave = () => setHoverRect(null);
