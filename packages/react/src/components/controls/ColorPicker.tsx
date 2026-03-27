@@ -275,6 +275,7 @@ export function ColorPicker({
       {open && (
         <div
           ref={popoverRef}
+          data-sightglass-chrome="true"
           style={{ ...popoverStyle, ...getPopoverPosition() }}
         >
           <input

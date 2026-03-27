@@ -1,4 +1,10 @@
-import { useState, useCallback, useRef, type CSSProperties } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type CSSProperties,
+} from "react";
 
 type Side = "top" | "right" | "bottom" | "left";
 
@@ -49,10 +55,13 @@ export function BoxSpacing({
     startValue: number;
   } | null>(null);
 
+  // Use document-level listeners for drag so pointer capture doesn't
+  // break the event flow (setPointerCapture redirects events to the
+  // captured element, skipping React's synthetic event on the parent).
   const handlePointerDown = useCallback(
     (side: Side, e: React.PointerEvent) => {
       e.preventDefault();
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      e.stopPropagation();
       setActiveSide(side);
       dragStart.current = {
         side,
@@ -64,8 +73,10 @@ export function BoxSpacing({
     [values]
   );
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
+  useEffect(() => {
+    if (!activeSide) return;
+
+    const handleMove = (e: PointerEvent) => {
       const ds = dragStart.current;
       if (!ds) return;
       const dx = e.clientX - ds.startX;
@@ -73,14 +84,20 @@ export function BoxSpacing({
       const delta = getDelta(ds.side, dx, dy);
       const next = clamp(ds.startValue + delta);
       onChange(ds.side, next);
-    },
-    [onChange]
-  );
+    };
 
-  const handlePointerUp = useCallback(() => {
-    dragStart.current = null;
-    setActiveSide(null);
-  }, []);
+    const handleUp = () => {
+      dragStart.current = null;
+      setActiveSide(null);
+    };
+
+    document.addEventListener("pointermove", handleMove);
+    document.addEventListener("pointerup", handleUp);
+    return () => {
+      document.removeEventListener("pointermove", handleMove);
+      document.removeEventListener("pointerup", handleUp);
+    };
+  }, [activeSide, onChange]);
 
   const labelStyle: CSSProperties = {
     display: "flex",
@@ -151,11 +168,7 @@ export function BoxSpacing({
   const sides: Side[] = ["top", "right", "bottom", "left"];
 
   return (
-    <div
-      style={{ display: "grid", gap: 4 }}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-    >
+    <div style={{ display: "grid", gap: 4 }}>
       <div style={labelStyle}>
         <span>{label}</span>
         {changed && onReset && (
