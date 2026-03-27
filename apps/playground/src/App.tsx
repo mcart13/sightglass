@@ -3,10 +3,7 @@ import {
   createEditOperation,
   createSessionTransaction,
   createSightglassController,
-  generateAnchor,
-  type EditScope,
   type SelectionAnchor,
-  type SessionTransaction,
   type SightglassController,
   type SightglassSessionSnapshot,
 } from "@sightglass/core";
@@ -15,14 +12,15 @@ import {
   buildMotionStoryboard,
   createMotionTuningSchema,
   generateDesignDirections,
-  runCritique,
-  type CritiqueScope,
+  runScopedCritique,
 } from "@sightglass/critique";
 import {
   createChangeManifest,
   createReviewArtifact,
 } from "@sightglass/export";
 import {
+  buildChangeManifestTargets,
+  buildSessionTransactionsFromHistory,
   createIndexedDbSessionStore,
   createReviewDraftSnapshot,
   createSessionRecord,
@@ -113,24 +111,6 @@ const resolveSelectedAnchor = (
   session: Readonly<SightglassSessionSnapshot>,
 ): SelectionAnchor | null => session.selection.best?.anchors[0] ?? null;
 
-const resolveCritiqueElement = (
-  selectedElement: Element,
-  scope: CritiqueScope,
-): Element => {
-  if (scope === "page") {
-    return selectedElement.ownerDocument.body;
-  }
-
-  if (scope === "section") {
-    return (
-      selectedElement.closest("section, article, aside, form, main, header, footer, nav") ??
-      selectedElement
-    );
-  }
-
-  return selectedElement;
-};
-
 const readOperationBefore = (
   session: Readonly<SightglassSessionSnapshot>,
   property: string,
@@ -148,87 +128,6 @@ const readOperationBefore = (
   const computedStyle =
     selectedElement.ownerDocument.defaultView?.getComputedStyle(selectedElement);
   return computedStyle?.getPropertyValue(property).trim() ?? "";
-};
-
-const buildTransactionsFromHistory = (
-  session: Readonly<SightglassSessionSnapshot>,
-  createdAt: string,
-): readonly SessionTransaction[] => {
-  if (session.history.applied.length === 0) {
-    return Object.freeze([]);
-  }
-
-  const inferScope = (semanticKind: string): EditScope => {
-    if (semanticKind === "token") {
-      return "token";
-    }
-
-    if (semanticKind === "component") {
-      return "component";
-    }
-
-    return "single";
-  };
-
-  return Object.freeze(
-    session.history.applied.map((appliedState, index) =>
-      createSessionTransaction({
-        id: `playground-session-${createdAt}-${index + 1}`,
-        scope: inferScope(appliedState.semanticKind),
-        targets: [generateAnchor(appliedState.target)],
-        operations: [
-          createEditOperation({
-            id: `playground-op-${index + 1}`,
-            property: appliedState.property,
-            before: appliedState.before,
-            after: appliedState.after,
-            semanticKind: appliedState.semanticKind,
-          }),
-        ],
-        createdAt,
-      }),
-    ),
-  );
-};
-
-const buildManifestTargets = (
-  transactions: readonly SessionTransaction[],
-  fallbackAnchor: SelectionAnchor | null,
-) => {
-  if (transactions.length === 0) {
-    return fallbackAnchor
-      ? Object.freeze([
-          {
-            anchor: fallbackAnchor,
-            scope: "single" as const,
-            semanticLabel: "Current playground target",
-          },
-        ])
-      : Object.freeze([]);
-  }
-
-  const seen = new Set<string>();
-  const targets: Array<{
-    anchor: SessionTransaction["targets"][number] | SelectionAnchor;
-    scope: EditScope;
-  }> = [];
-
-  for (const transaction of transactions) {
-    for (const transactionTarget of transaction.targets) {
-      const key = `${transaction.scope}:${transactionTarget.runtimeId}:${transactionTarget.selector}`;
-      if (seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      targets.push({
-        anchor: transactionTarget,
-        scope: transaction.scope,
-      });
-    }
-  }
-
-  return Object.freeze(targets);
 };
 
 const inspectAnchor = (
@@ -253,6 +152,14 @@ const inspectAnchor = (
     });
   } catch {
     // Ignore stale selectors when replaying old sessions.
+  }
+};
+
+const resetControllerHistory = async (
+  controller: SightglassController,
+): Promise<void> => {
+  while (controller.getSnapshot().history.canUndo) {
+    await controller.undo();
   }
 };
 
@@ -314,16 +221,8 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
   const [manifestText, setManifestText] = useState("");
   const selectedAnchor = resolveSelectedAnchor(session);
   const critiqueReport = useMemo(() => {
-    if (!session.selectedElement || !selectedAnchor) {
-      return null;
-    }
-
-    return runCritique({
-      document,
-      selectedElement: resolveCritiqueElement(
-        session.selectedElement,
-        reviewDraft.critiqueScope,
-      ),
+    return runScopedCritique({
+      selectedElement: session.selectedElement,
       perspective: reviewDraft.critiquePerspective,
       scope: reviewDraft.critiqueScope,
       target: selectedAnchor,
@@ -356,12 +255,19 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
     }
 
     const createdAt = new Date().toISOString();
-    const transactions = buildTransactionsFromHistory(session, createdAt);
+    const transactions = buildSessionTransactionsFromHistory(
+      session.history,
+      createdAt,
+    );
 
     return createChangeManifest({
       route: "/playground/landing",
       sessionId: `playground-${createdAt}`,
-      targets: buildManifestTargets(transactions, selectedAnchor),
+      targets: buildChangeManifestTargets(
+        transactions,
+        selectedAnchor,
+        "Current playground target",
+      ),
       transactions,
       critique: critiqueReport.findings,
       exploration:
@@ -509,9 +415,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
         return;
       }
 
-      while (controller.getSnapshot().history.canUndo) {
-        await controller.undo();
-      }
+      await resetControllerHistory(controller);
 
       for (const transaction of latest.manifest.transactions) {
         await controller.apply(transaction);
@@ -528,9 +432,7 @@ const LiveHarness = ({ controller }: LiveHarnessProps) => {
 
   const handleReset = async () => {
     try {
-      while (controller.getSnapshot().history.canUndo) {
-        await controller.undo();
-      }
+      await resetControllerHistory(controller);
 
       setStatusText("Reverted the live preview back to the baseline fixture.");
     } catch {

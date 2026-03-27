@@ -14,6 +14,10 @@ import type {
   MotionTuningControlId,
 } from "@sightglass/critique";
 import {
+  createReviewDraftSnapshot,
+  type ReviewDraftSnapshot,
+} from "@sightglass/session";
+import {
   createSightglassController,
   type EditScope,
   type SelectionPoint,
@@ -40,13 +44,7 @@ interface SightglassProviderProps extends PropsWithChildren {
   readonly document?: Document;
 }
 
-interface ReviewDraftState {
-  readonly critiquePerspective: CritiquePerspective;
-  readonly critiqueScope: CritiqueScope;
-  readonly selectedFindingId: string | null;
-  readonly selectedDirectionId: string | null;
-  readonly motionValues: Readonly<Partial<Record<MotionTuningControlId, number>>>;
-}
+type ReviewDraftState = ReviewDraftSnapshot;
 
 interface ReviewDraftCommands {
   setCritiquePerspective(perspective: CritiquePerspective): void;
@@ -147,13 +145,14 @@ export const SightglassProvider = ({
     [resolvedController],
   );
   const reviewDraftState = useMemo<ReviewDraftState>(
-    () => ({
-      critiquePerspective,
-      critiqueScope,
-      selectedFindingId,
-      selectedDirectionId,
-      motionValues: Object.freeze({ ...motionValues }),
-    }),
+    () =>
+      createReviewDraftSnapshot({
+        critiquePerspective,
+        critiqueScope,
+        selectedFindingId,
+        selectedDirectionId,
+        motionValues,
+      }),
     [
       critiquePerspective,
       critiqueScope,

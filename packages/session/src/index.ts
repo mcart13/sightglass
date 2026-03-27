@@ -17,3 +17,7 @@ export {
   isSessionRecord,
   serializeHistorySnapshot,
 } from "./session-schema.js";
+export {
+  buildChangeManifestTargets,
+  buildSessionTransactionsFromHistory,
+} from "./session-helpers.js";

@@ -4,8 +4,10 @@ import type {
   CritiqueGroups,
   CritiqueReport,
   CritiquePerspective,
+  CritiqueScope,
   RunCritiqueOptions,
 } from "./contracts.js";
+import type { TargetAnchor } from "@sightglass/core";
 import { CRITIQUE_CATEGORIES } from "./contracts.js";
 import { inferCritiqueContext } from "./context/infer-context.js";
 import { buildExploreEditPlan } from "./explore/edit-plan.js";
@@ -26,6 +28,7 @@ export { buildExploreEditPlan } from "./explore/edit-plan.js";
 export { generateDesignDirections } from "./explore/design-directions.js";
 export { buildMotionStoryboard } from "./motion/build-storyboard.js";
 export { createMotionTuningSchema } from "./motion/tuning-schema.js";
+export { resolveCritiqueScopeElement } from "./context/infer-context.js";
 
 const SEVERITY_SCORES = Object.freeze({
   critical: 300,
@@ -96,5 +99,28 @@ export const runCritique = (
     groupedFindings: groupFindings(findings),
     perspective: options.perspective,
     scope: options.scope,
+  });
+};
+
+export interface RunScopedCritiqueOptions {
+  readonly selectedElement: Element | null;
+  readonly perspective: CritiquePerspective;
+  readonly scope: CritiqueScope;
+  readonly target: Readonly<TargetAnchor> | null;
+}
+
+export const runScopedCritique = (
+  options: RunScopedCritiqueOptions,
+): Readonly<CritiqueReport> | null => {
+  if (!options.selectedElement || !options.target) {
+    return null;
+  }
+
+  return runCritique({
+    document: options.selectedElement.ownerDocument,
+    selectedElement: options.selectedElement,
+    perspective: options.perspective,
+    scope: options.scope,
+    target: options.target,
   });
 };

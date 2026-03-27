@@ -11,6 +11,15 @@
     "paths": {
       "@sightglass/core": [
         "../core/src/index.ts"
+      ],
+      "@sightglass/critique": [
+        "../critique/src/index.ts"
+      ],
+      "@sightglass/export": [
+        "../export/src/index.ts"
+      ],
+      "@sightglass/session": [
+        "../session/src/index.ts"
       ]
     },
     "types": [
