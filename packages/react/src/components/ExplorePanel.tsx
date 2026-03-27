@@ -2,44 +2,21 @@ import { useMemo, type CSSProperties } from "react";
 import {
   buildExploreEditPlan,
   generateDesignDirections,
-  runCritique,
+  runScopedCritique,
 } from "@sightglass/critique";
 import type { SightglassSessionSnapshot } from "@sightglass/core";
 import {
   useSightglassReviewDraftCommands,
   useSightglassReviewDraftState,
 } from "../use-sightglass";
+import {
+  panelSectionLabelStyle,
+  panelSectionStyle,
+} from "./panel-styles";
 
 interface ExplorePanelProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
 }
-
-const SECTION_SELECTOR = [
-  "section",
-  "article",
-  "aside",
-  "form",
-  "main",
-  "header",
-  "footer",
-  "nav",
-].join(",");
-
-const sectionStyle: CSSProperties = {
-  display: "grid",
-  gap: 10,
-  padding: 14,
-  borderRadius: 18,
-  background: "rgba(15, 23, 42, 0.04)",
-  border: "1px solid rgba(148, 163, 184, 0.18)",
-};
-
-const sectionLabelStyle: CSSProperties = {
-  fontSize: 12,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  color: "#64748b",
-};
 
 const optionStyle = (active: boolean): CSSProperties => ({
   display: "grid",
@@ -60,20 +37,8 @@ export const ExplorePanel = ({ session }: ExplorePanelProps) => {
   const target = session.selection.best?.anchors[0] ?? null;
   const selectedElement = session.selectedElement;
   const report = useMemo(() => {
-    if (!selectedElement || !target) {
-      return null;
-    }
-
-    const scopedElement =
-      reviewDraft.critiqueScope === "page"
-        ? selectedElement.ownerDocument.body
-        : reviewDraft.critiqueScope === "section"
-          ? selectedElement.closest(SECTION_SELECTOR) ?? selectedElement
-          : selectedElement;
-
-    return runCritique({
-      document: selectedElement.ownerDocument,
-      selectedElement: scopedElement,
+    return runScopedCritique({
+      selectedElement,
       perspective: reviewDraft.critiquePerspective,
       scope: reviewDraft.critiqueScope,
       target,
@@ -97,10 +62,10 @@ export const ExplorePanel = ({ session }: ExplorePanelProps) => {
     [report, selectedDirection],
   );
 
-  if (!selectedElement || !target || !report) {
+  if (!report) {
     return (
-      <section style={sectionStyle}>
-        <span style={sectionLabelStyle}>Explore</span>
+      <section style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Explore</span>
         <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
           Critique a live target first, then explore stronger visual directions and
           scope-aware edit plans.
@@ -110,8 +75,8 @@ export const ExplorePanel = ({ session }: ExplorePanelProps) => {
   }
 
   return (
-    <section style={sectionStyle}>
-      <span style={sectionLabelStyle}>Explore</span>
+    <section style={panelSectionStyle}>
+      <span style={panelSectionLabelStyle}>Explore</span>
       <div style={{ display: "grid", gap: 10 }}>
         {directions.map((direction) => (
           <button

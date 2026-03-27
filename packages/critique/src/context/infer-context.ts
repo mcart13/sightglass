@@ -31,7 +31,7 @@ const LAYOUT_AFFECTING_PROPERTIES = new Set([
   "bottom",
 ]);
 
-const resolveScopeElement = (
+export const resolveCritiqueScopeElement = (
   document: Document,
   selectedElement: Element,
   scope: CritiqueScope,
@@ -166,7 +166,11 @@ export const inferCritiqueContext = (
   selectedElement: Element,
   scope: CritiqueScope,
 ): Readonly<CritiqueContext> => {
-  const scopeElement = resolveScopeElement(document, selectedElement, scope);
+  const scopeElement = resolveCritiqueScopeElement(
+    document,
+    selectedElement,
+    scope,
+  );
   const route =
     scopeElement.closest("[data-route]")?.getAttribute("data-route") ??
     document.body.getAttribute("data-route") ??

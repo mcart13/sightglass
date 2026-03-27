@@ -3,7 +3,9 @@ import { createTargetAnchor } from "@sightglass/core";
 import { describe, expect, it } from "vitest";
 import {
   CRITIQUE_CATEGORIES,
+  resolveCritiqueScopeElement,
   runCritique,
+  runScopedCritique,
   type CritiqueScope,
 } from "./index.js";
 
@@ -157,5 +159,41 @@ describe("critique engine", () => {
 
     expect(report.context.matchingActionCount).toBe(0);
     expect(report.findings.length).toBeGreaterThan(0);
+  });
+
+  it("resolves the correct element for node, section, and page scopes", () => {
+    const document = createDocument(`
+      <main>
+        <section data-testid="section">
+          <div>
+            <button data-testid="selected-target">Try it</button>
+          </div>
+        </section>
+      </main>
+    `);
+    const selectedElement = document.querySelector(
+      "[data-testid='selected-target']",
+    ) as Element;
+
+    expect(
+      resolveCritiqueScopeElement(document, selectedElement, "node"),
+    ).toBe(selectedElement);
+    expect(resolveCritiqueScopeElement(document, selectedElement, "section")).toBe(
+      document.querySelector("[data-testid='section']"),
+    );
+    expect(resolveCritiqueScopeElement(document, selectedElement, "page")).toBe(
+      document.body,
+    );
+  });
+
+  it("returns null when scoped critique cannot run yet", () => {
+    expect(
+      runScopedCritique({
+        selectedElement: null,
+        perspective: "emil",
+        scope: "page",
+        target: createAnchor(),
+      }),
+    ).toBeNull();
   });
 });

@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
-  createEditOperation,
-  createSessionTransaction,
   generateAnchor,
-  type EditScope,
   type SelectionAnchor,
-  type SessionTransaction,
   type SightglassSessionSnapshot,
 } from "@sightglass/core";
 import {
@@ -13,13 +9,15 @@ import {
   buildMotionStoryboard,
   createMotionTuningSchema,
   generateDesignDirections,
-  runCritique,
+  runScopedCritique,
 } from "@sightglass/critique";
 import {
   createChangeManifest,
   createReviewArtifact,
 } from "@sightglass/export";
 import {
+  buildChangeManifestTargets,
+  buildSessionTransactionsFromHistory,
   createIndexedDbSessionStore,
   createReviewDraftSnapshot,
   createSessionRecord,
@@ -31,28 +29,17 @@ import {
   useSightglassReviewDraftCommands,
   useSightglassReviewDraftState,
 } from "../use-sightglass";
+import {
+  panelCardStyle,
+  panelSectionLabelStyle,
+  panelSectionStyle,
+} from "./panel-styles";
 
 interface SessionPanelProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
 }
 
 type ReviewDraftState = ReturnType<typeof useSightglassReviewDraftState>;
-
-const sectionStyle: CSSProperties = {
-  display: "grid",
-  gap: 10,
-  padding: 14,
-  borderRadius: 18,
-  background: "rgba(15, 23, 42, 0.04)",
-  border: "1px solid rgba(148, 163, 184, 0.18)",
-};
-
-const sectionLabelStyle: CSSProperties = {
-  fontSize: 12,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  color: "#64748b",
-};
 
 const buttonStyle: CSSProperties = {
   border: "1px solid rgba(148, 163, 184, 0.22)",
@@ -61,15 +48,6 @@ const buttonStyle: CSSProperties = {
   borderRadius: 999,
   padding: "6px 10px",
   cursor: "pointer",
-};
-
-const cardStyle: CSSProperties = {
-  display: "grid",
-  gap: 6,
-  padding: 12,
-  borderRadius: 14,
-  background: "rgba(255, 255, 255, 0.9)",
-  border: "1px solid rgba(148, 163, 184, 0.16)",
 };
 
 const resolveTargetAnchor = (
@@ -97,87 +75,6 @@ const buildRoute = (session: Readonly<SightglassSessionSnapshot>): string => {
   }
 
   return "/";
-};
-
-const buildTransactions = (
-  session: Readonly<SightglassSessionSnapshot>,
-  createdAt: string,
-): readonly SessionTransaction[] => {
-  if (session.history.applied.length === 0) {
-    return Object.freeze([]);
-  }
-
-  const inferScope = (semanticKind: string): EditScope => {
-    if (semanticKind === "token") {
-      return "token";
-    }
-
-    if (semanticKind === "component") {
-      return "component";
-    }
-
-    return "single";
-  };
-
-  return Object.freeze(
-    session.history.applied.map((appliedState, index) =>
-      createSessionTransaction({
-        id: `session-transaction-${createdAt}-${index + 1}`,
-        scope: inferScope(appliedState.semanticKind),
-        targets: [generateAnchor(appliedState.target)],
-        operations: [
-          createEditOperation({
-            id: `session-op-${index + 1}`,
-            property: appliedState.property,
-            before: appliedState.before,
-            after: appliedState.after,
-            semanticKind: appliedState.semanticKind,
-          }),
-        ],
-        createdAt,
-      }),
-    ),
-  );
-};
-
-const buildManifestTargets = (
-  transactions: readonly SessionTransaction[],
-  fallbackAnchor: SelectionAnchor | null,
-) => {
-  if (transactions.length === 0) {
-    return fallbackAnchor
-      ? Object.freeze([
-          {
-            anchor: fallbackAnchor,
-            scope: "single" as const,
-            semanticLabel: "Current selection",
-          },
-        ])
-      : Object.freeze([]);
-  }
-
-  const seen = new Set<string>();
-  const targets: Array<{
-    anchor: SessionTransaction["targets"][number] | SelectionAnchor;
-    scope: EditScope;
-  }> = [];
-
-  for (const transaction of transactions) {
-    for (const transactionTarget of transaction.targets) {
-      const key = `${transaction.scope}:${transactionTarget.runtimeId}:${transactionTarget.selector}`;
-      if (seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      targets.push({
-        anchor: transactionTarget,
-        scope: transaction.scope,
-      });
-    }
-  }
-
-  return Object.freeze(targets);
 };
 
 const applyLoadedRecordEdits = (
@@ -215,12 +112,7 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
     [session.history.applied.length, target?.selector],
   );
   const critiqueReport = useMemo(() => {
-    if (!selectedElement || !target) {
-      return null;
-    }
-
-    return runCritique({
-      document: selectedElement.ownerDocument,
+    return runScopedCritique({
       selectedElement,
       perspective: reviewDraft.critiquePerspective,
       scope: reviewDraft.critiqueScope,
@@ -254,7 +146,10 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
     }
 
     const createdAt = new Date().toISOString();
-    const transactions = buildTransactions(session, createdAt);
+    const transactions = buildSessionTransactionsFromHistory(
+      session.history,
+      createdAt,
+    );
     const exploration =
       selectedDirection && critiqueReport
         ? [
@@ -269,7 +164,11 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
     const manifest = createChangeManifest({
       route,
       sessionId: `session-${createdAt}`,
-      targets: buildManifestTargets(transactions, target),
+      targets: buildChangeManifestTargets(
+        transactions,
+        target,
+        "Current selection",
+      ),
       transactions,
       critique: critiqueReport.findings,
       exploration,
@@ -406,8 +305,8 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
   };
 
   return (
-    <section style={sectionStyle}>
-      <span style={sectionLabelStyle}>Session review</span>
+    <section style={panelSectionStyle}>
+      <span style={panelSectionLabelStyle}>Session review</span>
       <label style={{ display: "grid", gap: 6 }}>
         <strong>Session name</strong>
         <input
@@ -443,7 +342,11 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
           </span>
         ) : (
           savedSessions.map((savedSession) => (
-            <div key={savedSession.id} data-saved-session={savedSession.id} style={cardStyle}>
+            <div
+              key={savedSession.id}
+              data-saved-session={savedSession.id}
+              style={panelCardStyle}
+            >
               <strong>{savedSession.name}</strong>
               <span style={{ color: "#475569", fontSize: 13 }}>
                 {savedSession.route} · {savedSession.reviewArtifact.transactionCount} transactions
@@ -464,7 +367,7 @@ export const SessionPanel = ({ session }: SessionPanelProps) => {
       </label>
 
       {record ? (
-        <div data-session-review-artifact style={cardStyle}>
+        <div data-session-review-artifact style={panelCardStyle}>
           <strong>{record.reviewArtifact.route}</strong>
           <span style={{ color: "#475569", fontSize: 13 }}>
             {record.reviewArtifact.critiqueSummary.totalFindings} findings ·{" "}

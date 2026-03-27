@@ -1,43 +1,23 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo } from "react";
 import {
   buildMotionStoryboard,
   createMotionTuningSchema,
-  runCritique,
+  runScopedCritique,
 } from "@sightglass/critique";
 import type { SightglassSessionSnapshot } from "@sightglass/core";
 import {
   useSightglassReviewDraftCommands,
   useSightglassReviewDraftState,
 } from "../use-sightglass";
+import {
+  panelCardStyle,
+  panelSectionLabelStyle,
+  panelSectionStyle,
+} from "./panel-styles";
 
 interface MotionLabProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
 }
-
-const sectionStyle: CSSProperties = {
-  display: "grid",
-  gap: 10,
-  padding: 14,
-  borderRadius: 18,
-  background: "rgba(15, 23, 42, 0.04)",
-  border: "1px solid rgba(148, 163, 184, 0.18)",
-};
-
-const sectionLabelStyle: CSSProperties = {
-  fontSize: 12,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  color: "#64748b",
-};
-
-const cardStyle: CSSProperties = {
-  display: "grid",
-  gap: 6,
-  padding: 12,
-  borderRadius: 14,
-  border: "1px solid rgba(148, 163, 184, 0.16)",
-  background: "rgba(255, 255, 255, 0.9)",
-};
 
 export const MotionLab = ({ session }: MotionLabProps) => {
   const reviewDraft = useSightglassReviewDraftState();
@@ -45,12 +25,7 @@ export const MotionLab = ({ session }: MotionLabProps) => {
   const target = session.selection.best?.anchors[0] ?? null;
   const selectedElement = session.selectedElement;
   const critiqueReport = useMemo(() => {
-    if (!selectedElement || !target) {
-      return null;
-    }
-
-    return runCritique({
-      document: selectedElement.ownerDocument,
+    return runScopedCritique({
       selectedElement,
       perspective: "jhey",
       scope: "node",
@@ -66,10 +41,10 @@ export const MotionLab = ({ session }: MotionLabProps) => {
     [critiqueReport],
   );
 
-  if (!selectedElement || !target || !storyboard || !tuningSchema) {
+  if (!storyboard || !tuningSchema) {
     return (
-      <section style={sectionStyle}>
-        <span style={sectionLabelStyle}>Motion lab</span>
+      <section style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Motion lab</span>
         <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
           Select a live interaction to review storyboard steps, performance risks, and
           reduced-motion-aware tuning controls.
@@ -79,8 +54,8 @@ export const MotionLab = ({ session }: MotionLabProps) => {
   }
 
   return (
-    <section style={sectionStyle}>
-      <span style={sectionLabelStyle}>Motion lab</span>
+    <section style={panelSectionStyle}>
+      <span style={panelSectionLabelStyle}>Motion lab</span>
       <div style={{ display: "grid", gap: 8 }}>
         <strong>{storyboard.pipelineTier === "layout-risk" ? "Layout-risk motion" : "Compositor-safe motion"}</strong>
         {storyboard.warnings.map((warning) => (
@@ -92,7 +67,11 @@ export const MotionLab = ({ session }: MotionLabProps) => {
 
       <div style={{ display: "grid", gap: 8 }}>
         {storyboard.steps.map((step) => (
-          <div key={step.id} data-storyboard-step={step.id} style={cardStyle}>
+          <div
+            key={step.id}
+            data-storyboard-step={step.id}
+            style={panelCardStyle}
+          >
             <strong>{step.title}</strong>
             <span style={{ color: "#475569", fontSize: 13 }}>
               {step.durationMs}ms · {step.emphasis}

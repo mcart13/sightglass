@@ -28,6 +28,15 @@ interface CreateIndexedDbSessionStoreOptions {
 const cloneRecord = (record: Readonly<SessionRecord>): Readonly<SessionRecord> =>
   structuredClone(record);
 
+const cloneAndSortRecords = (
+  records: Iterable<Readonly<SessionRecord>>,
+): readonly SessionRecord[] =>
+  Object.freeze(
+    [...records]
+      .map((record) => cloneRecord(record))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
+  );
+
 export const createMemorySessionAdapter = (
   initialRecords: readonly SessionRecord[] = [],
 ): SessionStoreAdapter => {
@@ -44,11 +53,7 @@ export const createMemorySessionAdapter = (
       return record ? cloneRecord(record) : null;
     },
     async list() {
-      return Object.freeze(
-        [...records.values()]
-          .map((record) => cloneRecord(record))
-          .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
-      );
+      return cloneAndSortRecords(records.values());
     },
     async delete(id) {
       records.delete(id);
@@ -121,11 +126,7 @@ const createIndexedDbAdapter = async (
     },
     async list() {
       const records = (await transact("readonly", (store) => store.getAll())) as SessionRecord[];
-      return Object.freeze(
-        records
-          .map((record) => cloneRecord(record))
-          .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
-      );
+      return cloneAndSortRecords(records);
     },
     async delete(id) {
       await transact("readwrite", (store) => store.delete(id));

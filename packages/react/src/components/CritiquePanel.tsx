@@ -1,31 +1,20 @@
 import { useMemo, type CSSProperties } from "react";
 import {
   CRITIQUE_CATEGORIES,
-  runCritique,
-  type CritiquePerspective,
-  type CritiqueScope,
+  CRITIQUE_PERSPECTIVES,
+  CRITIQUE_SCOPES,
+  runScopedCritique,
 } from "@sightglass/critique";
 import type { SightglassSessionSnapshot } from "@sightglass/core";
 import {
   useSightglassReviewDraftCommands,
   useSightglassReviewDraftState,
 } from "../use-sightglass";
-
-const sectionStyle: CSSProperties = {
-  display: "grid",
-  gap: 10,
-  padding: 14,
-  borderRadius: 18,
-  background: "rgba(15, 23, 42, 0.04)",
-  border: "1px solid rgba(148, 163, 184, 0.18)",
-};
-
-const sectionLabelStyle: CSSProperties = {
-  fontSize: 12,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  color: "#64748b",
-};
+import {
+  panelCardStyle,
+  panelSectionLabelStyle,
+  panelSectionStyle,
+} from "./panel-styles";
 
 const controlButtonStyle = (active: boolean): CSSProperties => ({
   border: active
@@ -38,15 +27,6 @@ const controlButtonStyle = (active: boolean): CSSProperties => ({
   cursor: "pointer",
 });
 
-const findingCardStyle: CSSProperties = {
-  display: "grid",
-  gap: 6,
-  padding: 12,
-  borderRadius: 14,
-  background: "rgba(255, 255, 255, 0.9)",
-  border: "1px solid rgba(148, 163, 184, 0.16)",
-};
-
 const CATEGORY_LABELS = Object.freeze({
   "visual-design": "Visual design",
   "interface-design": "Interface design",
@@ -57,27 +37,15 @@ const CATEGORY_LABELS = Object.freeze({
   "motion-performance": "Motion performance",
 });
 
+const SCOPE_LABELS = Object.freeze({
+  node: "Selected element",
+  section: "Containing section",
+  page: "Entire page",
+});
+
 interface CritiquePanelProps {
   readonly session: Readonly<SightglassSessionSnapshot>;
 }
-
-const resolveScopeElement = (
-  selectedElement: Element,
-  scope: CritiqueScope,
-): Element => {
-  if (scope === "page") {
-    return selectedElement.ownerDocument.body;
-  }
-
-  if (scope === "section") {
-    return (
-      selectedElement.closest("section, article, aside, form, main, header, footer, nav") ??
-      selectedElement
-    );
-  }
-
-  return selectedElement;
-};
 
 export const CritiquePanel = ({ session }: CritiquePanelProps) => {
   const reviewDraft = useSightglassReviewDraftState();
@@ -85,26 +53,18 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
   const target = session.selection.best?.anchors[0] ?? null;
   const selectedElement = session.selectedElement;
   const report = useMemo(() => {
-    if (!selectedElement || !target) {
-      return null;
-    }
-
-    return runCritique({
-      document: selectedElement.ownerDocument,
-      selectedElement: resolveScopeElement(
-        selectedElement,
-        reviewDraft.critiqueScope,
-      ),
+    return runScopedCritique({
+      selectedElement,
       perspective: reviewDraft.critiquePerspective,
       scope: reviewDraft.critiqueScope,
       target,
     });
   }, [reviewDraft.critiquePerspective, reviewDraft.critiqueScope, selectedElement, target]);
 
-  if (!selectedElement || !target || !report) {
+  if (!report) {
     return (
-      <section style={sectionStyle}>
-        <span style={sectionLabelStyle}>Critique</span>
+      <section style={panelSectionStyle}>
+        <span style={panelSectionLabelStyle}>Critique</span>
         <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
           Run critique on a live selection to inspect visual, accessibility, and motion
           issues before turning them into an edit plan.
@@ -116,11 +76,11 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
   const leadFinding = report.findings[0] ?? null;
 
   return (
-    <section style={sectionStyle}>
-      <span style={sectionLabelStyle}>Critique</span>
+    <section style={panelSectionStyle}>
+      <span style={panelSectionLabelStyle}>Critique</span>
       <div style={{ display: "grid", gap: 8 }}>
         <strong>Top finding</strong>
-        <div style={findingCardStyle}>
+        <div style={panelCardStyle}>
           <strong>{leadFinding?.title ?? "No critique findings"}</strong>
           <span style={{ color: "#475569", fontSize: 13 }}>
             {leadFinding
@@ -131,9 +91,9 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
       </div>
 
       <div style={{ display: "grid", gap: 8 }}>
-        <span style={sectionLabelStyle}>Review scope</span>
+        <span style={panelSectionLabelStyle}>Review scope</span>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {(["node", "section", "page"] as const).map((scopeOption) => (
+          {CRITIQUE_SCOPES.map((scopeOption) => (
             <button
               key={scopeOption}
               type="button"
@@ -142,20 +102,16 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
               style={controlButtonStyle(reviewDraft.critiqueScope === scopeOption)}
               onClick={() => reviewDraftCommands.setCritiqueScope(scopeOption)}
             >
-              {scopeOption === "node"
-                ? "Selected element"
-                : scopeOption === "section"
-                  ? "Containing section"
-                  : "Entire page"}
+              {SCOPE_LABELS[scopeOption]}
             </button>
           ))}
         </div>
       </div>
 
       <div style={{ display: "grid", gap: 8 }}>
-        <span style={sectionLabelStyle}>Perspective</span>
+        <span style={panelSectionLabelStyle}>Perspective</span>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {(["emil", "jakub", "jhey"] as const).map((perspectiveOption) => (
+          {CRITIQUE_PERSPECTIVES.map((perspectiveOption) => (
             <button
               key={perspectiveOption}
               type="button"
@@ -173,7 +129,7 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
       </div>
 
       {reviewDraft.selectedFindingId ? (
-        <div style={findingCardStyle}>
+        <div style={panelCardStyle}>
           <strong>Explore handoff ready</strong>
           <span style={{ color: "#475569", fontSize: 13 }}>
             Selected finding: {reviewDraft.selectedFindingId}
@@ -193,7 +149,7 @@ export const CritiquePanel = ({ session }: CritiquePanelProps) => {
             <div key={category} style={{ display: "grid", gap: 8 }}>
               <strong>{CATEGORY_LABELS[category]}</strong>
               {findings.map((finding) => (
-                <article key={finding.id} style={findingCardStyle}>
+                <article key={finding.id} style={panelCardStyle}>
                   <strong>{finding.title}</strong>
                   <span style={{ color: "#475569", fontSize: 13 }}>
                     {finding.observation}

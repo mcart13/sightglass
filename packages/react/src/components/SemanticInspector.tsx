@@ -6,6 +6,7 @@ import {
   type SightglassSessionSnapshot,
 } from "@sightglass/core";
 import type { OverlayState, SightglassCommands } from "../provider";
+import { panelSectionLabelStyle } from "./panel-styles";
 
 interface SemanticInspectorProps {
   readonly commands: Pick<SightglassCommands, "setHoveredScope">;
@@ -20,13 +21,6 @@ const sectionStyle: CSSProperties = {
   borderRadius: 18,
   background: "rgba(255, 255, 255, 0.78)",
   border: "1px solid rgba(148, 163, 184, 0.18)",
-};
-
-const sectionLabelStyle: CSSProperties = {
-  fontSize: 12,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  color: "#64748b",
 };
 
 const mutedTextStyle: CSSProperties = {
@@ -171,7 +165,7 @@ export const SemanticInspector = ({
   if (!session.selectedElement || !analysis) {
     return (
       <section style={sectionStyle}>
-        <span style={sectionLabelStyle}>Semantic controls</span>
+        <span style={panelSectionLabelStyle}>Semantic controls</span>
         <p style={mutedTextStyle}>
           Select a live target to inspect tokens, repeated components, and safe scope
           options.
@@ -183,7 +177,7 @@ export const SemanticInspector = ({
   return (
     <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
       <section style={sectionStyle}>
-        <span style={sectionLabelStyle}>Token candidates</span>
+        <span style={panelSectionLabelStyle}>Token candidates</span>
         {analysis.tokens.length === 0 ? (
           <p style={mutedTextStyle}>
             No token-like values detected yet. Use single-instance edits for this target.
@@ -207,7 +201,7 @@ export const SemanticInspector = ({
       </section>
 
       <section style={sectionStyle}>
-        <span style={sectionLabelStyle}>Component signature</span>
+        <span style={panelSectionLabelStyle}>Component signature</span>
         {analysis.component ? (
           <div style={{ display: "grid", gap: 4 }}>
             <strong>{analysis.component.label}</strong>
@@ -223,7 +217,7 @@ export const SemanticInspector = ({
       </section>
 
       <section style={sectionStyle}>
-        <span style={sectionLabelStyle}>Scope choices</span>
+        <span style={panelSectionLabelStyle}>Scope choices</span>
         <div style={{ display: "grid", gap: 10 }}>
           {analysis.scopes.map((option) =>
             renderScopeOption(option, overlay.hoveredScope, commands),
