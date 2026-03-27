@@ -52,7 +52,7 @@ yarn dev:site
 
 ## Package publishing
 
-Sightglass now has the Changesets workflow wired for versioning and release prep. The current package manifests can stay private until registry publishing is intentionally enabled.
+Sightglass now has the Changesets workflow wired for the five publishable packages, and those package manifests expose public ESM entry points for registry release.
 
 ```bash
 yarn changeset
@@ -60,7 +60,7 @@ yarn version:packages
 yarn release:packages
 ```
 
-Intended publish targets:
+Current publish targets:
 
 - `@sightglass/core`
 - `@sightglass/react`
